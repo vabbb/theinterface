@@ -1,0 +1,13 @@
+install_manifest.txt
+*.swp
+*.o
+*.a
+bin/
+test/
+build/
+build-*/
+.lvimrc
+config-debug
+wayland-*-protocol.*
+/subprojects/wlroots
+subprojects
