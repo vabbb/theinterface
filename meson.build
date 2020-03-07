@@ -2,7 +2,7 @@ project(
   'interface', 
   'c',
   version : '0.0.1',
-  license: 'MIT',
+  license: 'GPL3',
   default_options: [
     'build.c_std=c18',
     'warning_level=2',
