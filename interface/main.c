@@ -9,17 +9,17 @@
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_output.h>
 
-struct interface_server {
+struct ti_server {
   struct wl_display *wl_display;
   struct wl_event_loop *wl_event_loop;
   struct wlr_backend *backend;
   struct wl_listener new_output;
-  struct wl_list outputs;  // interface_output::link
+  struct wl_list outputs; // ti_output::link
 };
 
-struct interface_output {
+struct ti_output {
   struct wlr_output *wlr_output;
-  struct interface_server *server;
+  struct ti_server *server;
   struct timespec last_frame;
   float color[4];
   int dec;
@@ -29,7 +29,7 @@ struct interface_output {
 };
 
 static void output_frame_notify(struct wl_listener *listener, void *data) {
-  struct interface_output *output = wl_container_of(listener, output, frame);
+  struct ti_output *output = wl_container_of(listener, output, frame);
   struct wlr_output *wlr_output = data;
   struct wlr_renderer *renderer = wlr_backend_get_renderer(wlr_output->backend);
 
@@ -56,8 +56,8 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
   wlr_renderer_begin(renderer, wlr_output->width, wlr_output->height);
 
   wlr_renderer_clear(
-      renderer, (const float *)(&output->color));  // compiler complains about
-                                                   // this second argument
+      renderer, (const float *)(&output->color)); // compiler complains about
+                                                  // this second argument
 
   wlr_output_commit(wlr_output);
   wlr_renderer_end(renderer);
@@ -66,7 +66,7 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 }
 
 static void output_destroy_notify(struct wl_listener *listener, void *data) {
-  struct interface_output *output = wl_container_of(listener, output, destroy);
+  struct ti_output *output = wl_container_of(listener, output, destroy);
   wl_list_remove(&output->link);
   wl_list_remove(&output->destroy.link);
   wl_list_remove(&output->frame.link);
@@ -74,7 +74,8 @@ static void output_destroy_notify(struct wl_listener *listener, void *data) {
 }
 
 static void new_output_notify(struct wl_listener *listener, void *data) {
-  struct interface_server *server = wl_container_of(listener, server, new_output);
+  struct ti_server *server =
+      wl_container_of(listener, server, new_output);
   struct wlr_output *wlr_output = data;
 
   if (wl_list_length(&wlr_output->modes) > 0) {
@@ -83,7 +84,7 @@ static void new_output_notify(struct wl_listener *listener, void *data) {
     wlr_output_set_mode(wlr_output, mode);
   }
 
-  struct interface_output *output = calloc(1, sizeof(struct interface_output));
+  struct ti_output *output = calloc(1, sizeof(struct ti_output));
   clock_gettime(CLOCK_MONOTONIC, &output->last_frame);
   output->server = server;
   output->wlr_output = wlr_output;
@@ -98,7 +99,7 @@ static void new_output_notify(struct wl_listener *listener, void *data) {
 }
 
 int main(int argc, char **argv) {
-  struct interface_server server;
+  struct ti_server server;
 
   server.wl_display = wl_display_create();
   assert(server.wl_display);
@@ -107,7 +108,7 @@ int main(int argc, char **argv) {
 
   // calling API
   server.backend = wlr_backend_autocreate(
-      server.wl_display, NULL);  // yields "root privelege" error
+      server.wl_display, NULL); // yields "root privelege" error
 
   assert(server.backend);
 
