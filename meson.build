@@ -1,10 +1,10 @@
 project(
-  'interface', 
+  'theinterface', 
   'c',
   version : '0.0.1',
-  license: 'GPL3',
+  license: 'Apache-2.0',
   default_options: [
-    'build.c_std=c18',
+    'c_std=c18',
     'warning_level=2',
     'werror=true',
     'optimization=3'
@@ -50,7 +50,7 @@ xkbcommon      = dependency('xkbcommon')
 libdrm         = dependency('libdrm')
 cairo          = dependency('cairo')
 
-interface_deps = [
+theinterface_deps = [
   pixman,
   wlroots,
   wayland_server,
@@ -58,6 +58,6 @@ interface_deps = [
 #  libdrm
 ]
 
-interface_inc = include_directories('include')
+theinterface_inc = include_directories('include')
 # subdir('include')
-subdir('interface')
+subdir('theinterface')
