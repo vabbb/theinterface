@@ -29,20 +29,10 @@ if cc.get_id() == 'clang'
 endif
 
 wlroots_version = ['>=0.10.0', '<0.11.0']
-wlroots_proj = subproject(
-  'wlroots',
-  default_options: ['examples=false'],
-  required: false,
-  version: wlroots_version,
-)
-if wlroots_proj.found()
-  wlroots = wlroots_proj.get_variable('wlroots')
-  wlroots_conf = wlroots_proj.get_variable('conf_data')
-  wlroots_has_xwayland = wlroots_conf.get('WLR_HAS_XWAYLAND') == 1
-else
-  wlroots = dependency('wlroots', version: wlroots_version)
-  wlroots_has_xwayland = cc.get_define('WLR_HAS_XWAYLAND', prefix: '#include <wlr/config.h>', dependencies: wlroots) == '1'
-endif
+wlroots = dependency('wlroots', version: wlroots_version)
+wlroots_has_xwayland = cc.get_define('WLR_HAS_XWAYLAND', prefix: '#include <wlr/config.h>', dependencies: wlroots) == '1'
+
+theinterface_inc = include_directories('include')
 
 pixman         = dependency('pixman-1')
 wayland_server = dependency('wayland-server', version: '>=1.18')
@@ -54,10 +44,19 @@ theinterface_deps = [
   pixman,
   wlroots,
   wayland_server,
-#  xkbcommon,
-#  libdrm
 ]
 
-theinterface_inc = include_directories('include')
-# subdir('include')
+wayland_protos = dependency('wayland-protocols', version: '>=1.17')
+subdir('protocol')
+
+# protos = library(
+# 	meson.project_name(), proto_files,
+# 	# soversion: soversion,
+# 	# dependencies: wlr_deps,
+# 	include_directories: [proto_inc],
+# 	install: true,
+# 	# link_args : symbols_flag,
+# 	# link_depends: symbols_file,
+# )
+
 subdir('theinterface')

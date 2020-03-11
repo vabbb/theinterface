@@ -8,6 +8,7 @@ theinterface_deps = [
   wayland_server,
   xkbcommon,
   cairo,
+  server_protos,
 ]
 
 executable(

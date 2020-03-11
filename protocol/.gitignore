@@ -1,0 +1,6 @@
+#ignore everything
+*
+
+#except these files
+!meson.build
+!.gitignore
