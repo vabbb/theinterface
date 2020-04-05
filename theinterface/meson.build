@@ -1,5 +1,7 @@
 theinterface_sources = files(
   'main.c',
+  'xdg_shell.c',
+  'keyboard.c',
 )
 
 theinterface_deps = [

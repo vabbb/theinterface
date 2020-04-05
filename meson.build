@@ -7,7 +7,7 @@ project(
     'c_std=c18',
     'warning_level=2',
     'werror=true',
-    'optimization=3'
+    'optimization=2'
   ],
 )
 
