@@ -1,9 +1,7 @@
-#define _POSIX_C_SOURCE 200809L
-#include <cstdlib>
+#include <cmath>
 #include <ctime>
 
 extern "C" {
-
 #define static
 #include <wlr/render/wlr_renderer.h>
 #undef static
@@ -74,7 +72,7 @@ void server_new_output(struct wl_listener *listener, void *data) {
   /* This event is rasied by the backend when a new output (aka a display or
    * monitor) becomes available. */
   struct ti_server *server = wl_container_of(listener, server, new_output);
-  struct wlr_output *wlr_output = (struct wlr_output *)data;
+  struct wlr_output *wlr_output = static_cast<struct wlr_output *>(data);
 
   /* Some backends don't have modes. DRM+KMS does, and we need to set a mode
    * before we can use the output. The mode is a tuple of (width, height,

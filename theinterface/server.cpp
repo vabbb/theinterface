@@ -1,8 +1,8 @@
 #include "server.hpp"
 
-namespace ti {
-ti_server &server::get() {
-  static ti_server s;
-  return s;
-}
-} // namespace ti
+// ti::server &ti::server::get() {
+//   static ti::server s;
+//   return s;
+// }
+
+// ti::server &ti::get_server() { return ti::server::get(); }

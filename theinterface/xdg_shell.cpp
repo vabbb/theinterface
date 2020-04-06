@@ -118,7 +118,8 @@ void server_new_xdg_surface(struct wl_listener *listener, void *data) {
   /* This event is raised when wlr_xdg_shell receives a new xdg surface from a
    * client, either a toplevel (application window) or popup. */
   struct ti_server *server = wl_container_of(listener, server, new_xdg_surface);
-  struct wlr_xdg_surface *xdg_surface = (struct wlr_xdg_surface *)(data);
+  struct wlr_xdg_surface *xdg_surface =
+      static_cast<struct wlr_xdg_surface *>(data);
   if (xdg_surface->role != WLR_XDG_SURFACE_ROLE_TOPLEVEL) {
     return;
   }

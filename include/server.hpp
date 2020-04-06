@@ -3,6 +3,7 @@
 
 extern "C" {
 #include <wlr/backend.h>
+#include <wlr/config.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/types/wlr_xdg_shell.h>
 }
@@ -10,12 +11,14 @@ extern "C" {
 #include "cursor.hpp"
 
 struct ti_server {
+#ifdef WLR_HAS_XWAYLAND
   struct wlr_xwayland *xwayland;
-  struct wlr_compositor *compositor;
+#endif
 
   struct wl_display *wl_display;
   struct wlr_backend *backend;
   struct wlr_renderer *renderer;
+  struct wlr_compositor *compositor;
 
   struct wlr_xdg_shell *xdg_shell;
   struct wl_listener new_xdg_surface;
@@ -42,13 +45,7 @@ struct ti_server {
   struct wlr_output_layout *output_layout;
   struct wl_list outputs;
   struct wl_listener new_output;
-};
 
-namespace ti {
-class server {
-public:
-  ti_server &get();
 };
-} // namespace ti
 
 #endif

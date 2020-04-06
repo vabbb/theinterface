@@ -1,5 +1,3 @@
-#define _POSIX_C_SOURCE 200809L
-
 #include <cstdbool>
 #include <cstdio>
 #include <cstdlib>
@@ -157,16 +155,19 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
+#ifdef WLR_HAS_XWAYLAND
   server.xwayland =
       wlr_xwayland_create(server.wl_display, server.compositor, false);
   setenv("DISPLAY", server.xwayland->display_name, true);
+#endif
 
   /* Set the WAYLAND_DISPLAY environment variable to our socket and run the
    * startup command if requested. */
   setenv("WAYLAND_DISPLAY", socket, true);
   if (startup_cmd) {
     if (fork() == 0) {
-      execl("/bin/sh", "/bin/sh", "-c", startup_cmd, (void *)NULL);
+      // sleep(10);
+      execl("/bin/sh", "/bin/sh", "-c", startup_cmd, nullptr);
     }
   }
   /* Run the Wayland event loop. This does not return until you exit the
@@ -174,10 +175,11 @@ int main(int argc, char *argv[]) {
    * loop configuration to listen to libinput events, DRM events, generate
    * frame events at the refresh rate, and so on. */
   wlr_log(WLR_INFO, "Running Wayland compositor on WAYLAND_DISPLAY=%s", socket);
-
   wl_display_run(server.wl_display);
 
+#ifdef WLR_HAS_XWAYLAND
   wlr_xwayland_destroy(server.xwayland);
+#endif
   /* Once wl_display_run returns, we shut down the server. */
   wl_display_destroy_clients(server.wl_display);
   wl_display_destroy(server.wl_display);

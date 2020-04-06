@@ -24,7 +24,9 @@ void server_new_input(struct wl_listener *listener, void *data) {
   /* This event is raised by the backend when a new input device becomes
    * available. */
   struct ti_server *server = wl_container_of(listener, server, new_input);
-  struct wlr_input_device *device = (struct wlr_input_device *)data;
+  struct wlr_input_device *device =
+      static_cast<struct wlr_input_device *>(data);
+
   switch (device->type) {
   case WLR_INPUT_DEVICE_KEYBOARD:
     server_new_keyboard(server, device);
@@ -174,7 +176,7 @@ void server_cursor_button(struct wl_listener *listener, void *data) {
    * event. */
   struct ti_server *server = wl_container_of(listener, server, cursor_button);
   struct wlr_event_pointer_button *event =
-      (struct wlr_event_pointer_button *)data;
+      static_cast<struct wlr_event_pointer_button *>(data);
   /* Notify the client with pointer focus that a button press has occurred */
   wlr_seat_pointer_notify_button(server->seat, event->time_msec, event->button,
                                  event->state);

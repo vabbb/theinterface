@@ -1,3 +1,5 @@
+#include <cmath>
+
 extern "C" {
 #define static
 #include <wlr/render/wlr_renderer.h>
