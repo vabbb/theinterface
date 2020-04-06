@@ -1,11 +1,9 @@
 #include <cstdlib>
 
-#include "wlroots.hpp"
-
-#include "seat.hpp"
+#include "server.hpp"
 #include "xdg_shell.hpp"
 
-#include "server.hpp"
+#include "seat.hpp"
 
 void seat_request_cursor(struct wl_listener *listener, void *data) {
   struct ti_server *server = wl_container_of(listener, server, request_cursor);

@@ -1,7 +1,5 @@
-#ifndef TI_KEYBOARD_H
-#define TI_KEYBOARD_H
-
-#include <wlr/types/wlr_keyboard.h>
+#ifndef TI_KEYBOARD_HPP
+#define TI_KEYBOARD_HPP
 
 struct ti_keyboard {
   struct wl_list link;

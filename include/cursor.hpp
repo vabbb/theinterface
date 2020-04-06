@@ -1,5 +1,5 @@
-#ifndef TI_CURSOR_H
-#define TI_CURSOR_H
+#ifndef TI_CURSOR_HPP
+#define TI_CURSOR_HPP
 
 /* For brevity's sake, struct members are annotated where they are used. */
 enum ti_cursor_mode {

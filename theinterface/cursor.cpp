@@ -1,13 +1,15 @@
 #include <cstdlib>
 
-#include "wlroots.hpp"
+extern "C" {
+#include <wlr/types/wlr_xcursor_manager.h>
+}
 
-#include "cursor.hpp"
 #include "keyboard.hpp"
 #include "seat.hpp"
+#include "server.hpp"
 #include "xdg_shell.hpp"
 
-#include "server.hpp"
+#include "cursor.hpp"
 
 static void server_new_pointer(struct ti_server *server,
                                struct wlr_input_device *device) {

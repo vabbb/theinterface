@@ -1,7 +1,5 @@
-#ifndef TI_OUTPUT_H
-#define TI_OUTPUT_H
-
-#include "wlroots.hpp"
+#ifndef TI_OUTPUT_HPP
+#define TI_OUTPUT_HPP
 
 struct ti_output {
   struct wl_list link;

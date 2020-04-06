@@ -1,7 +1,5 @@
-#ifndef TI_XDG_SHELL_H
-#define TI_XDG_SHELL_H
-
-#include "wlroots.hpp"
+#ifndef TI_XDG_SHELL_HPP
+#define TI_XDG_SHELL_HPP
 
 #include "cursor.hpp"
 

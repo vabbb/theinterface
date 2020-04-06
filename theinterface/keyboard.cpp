@@ -1,7 +1,8 @@
-#include <stdlib.h>
-#include <wayland-util.h>
+#include <cstdlib>
 
-#include "wlroots.hpp"
+extern "C"{
+#include <wlr/types/wlr_keyboard.h>
+}
 
 #include "keyboard.hpp"
 #include "xdg_shell.hpp"

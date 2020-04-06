@@ -1,6 +1,7 @@
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "server.hpp"
+
 #include "xdg_shell.hpp"
 
 static void begin_interactive(struct ti_xdg_view *view,

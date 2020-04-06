@@ -1,8 +1,13 @@
 #define _POSIX_C_SOURCE 200809L
 #include <cstdlib>
-#include <time.h>
+#include <ctime>
 
-#include "wlroots.hpp"
+extern "C" {
+
+#define static
+#include <wlr/render/wlr_renderer.h>
+#undef static
+}
 
 #include "output.hpp"
 #include "render.hpp"

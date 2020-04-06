@@ -1,7 +1,11 @@
-#ifndef TI_SERVER_H
-#define TI_SERVER_H
+#ifndef TI_SERVER_HPP
+#define TI_SERVER_HPP
 
-#include <wlr/types/wlr_cursor.h>
+extern "C" {
+#include <wlr/backend.h>
+#include <wlr/types/wlr_xcursor_manager.h>
+#include <wlr/types/wlr_xdg_shell.h>
+}
 
 #include "cursor.hpp"
 

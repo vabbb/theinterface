@@ -6,7 +6,13 @@
 #include <getopt.h>
 #include <unistd.h>
 
-#include "wlroots.hpp"
+extern "C" {
+#include <wayland-server-core.h>
+#include <wayland-util.h>
+
+#include <wlr/types/wlr_data_device.h>
+#include <wlr/util/log.h>
+}
 
 #include "cursor.hpp"
 #include "keyboard.hpp"
