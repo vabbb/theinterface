@@ -1,7 +1,13 @@
 theinterface_sources = files(
-  'main.c',
-  'xdg_shell.c',
-  'keyboard.c',
+  'cursor.cpp',
+  'main.cpp',
+  'keyboard.cpp',
+  'output.cpp',
+  'render.cpp',
+  'seat.cpp',
+  'server.cpp',
+  'xdg_shell.cpp',
+  'xwayland.cpp',
 )
 
 theinterface_deps = [

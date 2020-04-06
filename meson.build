@@ -1,10 +1,11 @@
 project(
   'theinterface', 
-  'c',
+  'c', 'cpp',
   version : '0.0.1',
   license: 'Apache-2.0',
   default_options: [
     'c_std=c18',
+    'cpp_std=c++11',
     'warning_level=2',
     'werror=true',
     'optimization=2'
@@ -15,10 +16,11 @@ add_project_arguments([
     '-Wno-unused-parameter',
     '-Wno-unused-variable',
     '-DWLR_USE_UNSTABLE',
-    '-DWL_HIDE_DEPRECATED' # Avoid wl_buffer deprecation warnings
-  ],
-  language: 'c',
+    '-DWL_HIDE_DEPRECATED', # Avoid wl_buffer deprecation warnings
+    ],
+  language: ['c', 'cpp'],
 )
+
 
 cc = meson.get_compiler('c')
 # Clang complains about some zeroed initializer lists (= {0}), even though they

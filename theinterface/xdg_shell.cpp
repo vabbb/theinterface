@@ -1,10 +1,10 @@
 #include <stdlib.h>
 
-#include "server.h"
-#include "xdg_shell.h"
+#include "server.hpp"
+#include "xdg_shell.hpp"
 
-static void begin_interactive(struct ti_xdg_view *view, enum ti_cursor_mode mode,
-                       uint32_t edges) {
+static void begin_interactive(struct ti_xdg_view *view,
+                              enum ti_cursor_mode mode, uint32_t edges) {
   /* This function sets up an interactive move or resize operation, where the
    * compositor stops propegating pointer events to clients and instead
    * consumes them itself, to move or resize windows. */
@@ -51,7 +51,8 @@ static void xdg_surface_destroy(struct wl_listener *listener, void *data) {
   free(view);
 }
 
-static void xdg_toplevel_request_move(struct wl_listener *listener, void *data) {
+static void xdg_toplevel_request_move(struct wl_listener *listener,
+                                      void *data) {
   /* This event is raised when a client would like to begin an interactive
    * move, typically because the user clicked on their client-side
    * decorations. Note that a more sophisticated compositor should check the
@@ -61,13 +62,15 @@ static void xdg_toplevel_request_move(struct wl_listener *listener, void *data) 
   begin_interactive(view, TI_CURSOR_MOVE, 0);
 }
 
-static void xdg_toplevel_request_resize(struct wl_listener *listener, void *data) {
+static void xdg_toplevel_request_resize(struct wl_listener *listener,
+                                        void *data) {
   /* This event is raised when a client would like to begin an interactive
    * resize, typically because the user clicked on their client-side
    * decorations. Note that a more sophisticated compositor should check the
    * provied serial against a list of button press serials sent to this
    * client, to prevent the client from requesting this whenever they want. */
-  struct wlr_xdg_toplevel_resize_event *event = data;
+  struct wlr_xdg_toplevel_resize_event *event =
+      (struct wlr_xdg_toplevel_resize_event *)(data);
   struct ti_xdg_view *view = wl_container_of(listener, view, request_resize);
   begin_interactive(view, TI_CURSOR_RESIZE, event->edges);
 }
@@ -114,13 +117,14 @@ void server_new_xdg_surface(struct wl_listener *listener, void *data) {
   /* This event is raised when wlr_xdg_shell receives a new xdg surface from a
    * client, either a toplevel (application window) or popup. */
   struct ti_server *server = wl_container_of(listener, server, new_xdg_surface);
-  struct wlr_xdg_surface *xdg_surface = data;
+  struct wlr_xdg_surface *xdg_surface = (struct wlr_xdg_surface *)(data);
   if (xdg_surface->role != WLR_XDG_SURFACE_ROLE_TOPLEVEL) {
     return;
   }
 
   /* Allocate a ti_xdg_view for this surface */
-  struct ti_xdg_view *view = calloc(1, sizeof(struct ti_xdg_view));
+  struct ti_xdg_view *view =
+      (struct ti_xdg_view *)calloc(1, sizeof(struct ti_xdg_view));
   view->server = server;
   view->xdg_surface = xdg_surface;
 

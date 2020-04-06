@@ -1,11 +1,15 @@
 #include <stdlib.h>
 #include <wayland-util.h>
 
-#include "keyboard.h"
-#include "server.h"
-#include "xdg_shell.h"
+#include "wlroots.hpp"
 
-static void keyboard_handle_modifiers(struct wl_listener *listener, void *data) {
+#include "keyboard.hpp"
+#include "xdg_shell.hpp"
+
+#include "server.hpp"
+
+static void keyboard_handle_modifiers(struct wl_listener *listener,
+                                      void *data) {
   /* This event is raised when a modifier key, such as shift or alt, is
    * pressed. We simply communicate this to the client. */
   struct ti_keyboard *keyboard = wl_container_of(listener, keyboard, modifiers);
@@ -30,10 +34,11 @@ static bool handle_keybinding(struct ti_server *server, xkb_keysym_t sym) {
    * This function assumes Alt is held down.
    */
   switch (sym) {
-  case XKB_KEY_Escape:
+  case XKB_KEY_Escape: {
     wl_display_terminate(server->wl_display);
     break;
-  case XKB_KEY_F1:
+  }
+  case XKB_KEY_F1: {
     /* Cycle to the next view */
     if (wl_list_length(&server->views) < 2) {
       break;
@@ -47,8 +52,10 @@ static bool handle_keybinding(struct ti_server *server, xkb_keysym_t sym) {
     wl_list_remove(&current_view->link);
     wl_list_insert(server->views.prev, &current_view->link);
     break;
-  default:
+  }
+  default: {
     return false;
+  }
   }
   return true;
 }
@@ -57,7 +64,7 @@ static void keyboard_handle_key(struct wl_listener *listener, void *data) {
   /* This event is raised when a key is pressed or released. */
   struct ti_keyboard *keyboard = wl_container_of(listener, keyboard, key);
   struct ti_server *server = keyboard->server;
-  struct wlr_event_keyboard_key *event = data;
+  struct wlr_event_keyboard_key *event = (struct wlr_event_keyboard_key *)data;
   struct wlr_seat *seat = server->seat;
 
   /* Translate libinput keycode -> xkbcommon */
@@ -87,13 +94,18 @@ static void keyboard_handle_key(struct wl_listener *listener, void *data) {
 
 void server_new_keyboard(struct ti_server *server,
                          struct wlr_input_device *device) {
-  struct ti_keyboard *keyboard = calloc(1, sizeof(struct ti_keyboard));
+  struct ti_keyboard *keyboard =
+      (struct ti_keyboard *)calloc(1, sizeof(struct ti_keyboard));
   keyboard->server = server;
   keyboard->device = device;
 
   /* We need to prepare an XKB keymap and assign it to the keyboard. This
    * assumes the defaults (e.g. layout = "us"). */
-  struct xkb_rule_names rules = {0};
+  struct xkb_rule_names rules = {.rules = nullptr,
+                                 .model = nullptr,
+                                 .layout = nullptr,
+                                 .variant = nullptr,
+                                 .options = nullptr};
   struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
   struct xkb_keymap *keymap =
       xkb_map_new_from_names(context, &rules, XKB_KEYMAP_COMPILE_NO_FLAGS);

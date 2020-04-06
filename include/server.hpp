@@ -3,7 +3,7 @@
 
 #include <wlr/types/wlr_cursor.h>
 
-#include "cursor.h"
+#include "cursor.hpp"
 
 struct ti_server {
   struct wlr_xwayland *xwayland;
@@ -39,5 +39,12 @@ struct ti_server {
   struct wl_list outputs;
   struct wl_listener new_output;
 };
+
+namespace ti {
+class server {
+public:
+  ti_server &get();
+};
+} // namespace ti
 
 #endif

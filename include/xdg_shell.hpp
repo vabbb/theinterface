@@ -1,11 +1,9 @@
 #ifndef TI_XDG_SHELL_H
 #define TI_XDG_SHELL_H
 
-#include <wayland-server-core.h>
-#include <wayland-util.h>
-#include <wlr/types/wlr_xdg_shell.h>
+#include "wlroots.hpp"
 
-#include "cursor.h"
+#include "cursor.hpp"
 
 struct ti_xdg_view {
   struct wl_list link;
