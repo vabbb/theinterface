@@ -80,7 +80,16 @@ void server_new_output(struct wl_listener *listener, void *data) {
    * just pick the monitor's preferred mode, a more sophisticated compositor
    * would let the user configure it. */
   if (!wl_list_empty(&wlr_output->modes)) {
-    struct wlr_output_mode *mode = wlr_output_preferred_mode(wlr_output);
+
+    // EVIL
+    struct wlr_output_mode *m;
+    wl_list_for_each(m, &wlr_output->modes, link) {
+      if (m->width == 1440 && m->height == 900) {
+        break;
+      }
+    };
+    struct wlr_output_mode *mode = m; // wlr_output_preferred_mode(wlr_output);
+
     wlr_output_set_mode(wlr_output, mode);
     wlr_output_enable(wlr_output, true);
     if (!wlr_output_commit(wlr_output)) {
