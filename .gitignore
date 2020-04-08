@@ -11,3 +11,4 @@ config-debug
 wayland-*-protocol.*
 .vscode/
 log.txt
+vgcore.*

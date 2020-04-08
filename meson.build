@@ -37,6 +37,7 @@ cairo          = dependency('cairo')
 libdrm         = dependency('libdrm')
 libinput       = dependency('libinput', version: '>=1.7.0')
 pixman         = dependency('pixman-1')
+udev           = dependency('libudev')
 wayland_server = dependency('wayland-server', version: '>=1.18')
 wayland_protos = dependency('wayland-protocols', version: '>=1.20')
 xkbcommon      = dependency('xkbcommon')
@@ -54,5 +55,7 @@ theinterface_deps = [
   wayland_server,
   xkbcommon,
   server_protos, # this is declared inside protocol/build.meson
+  libdrm,
+  udev,
 ]
 subdir('theinterface')

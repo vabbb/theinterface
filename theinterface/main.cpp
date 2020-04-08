@@ -7,7 +7,11 @@
 extern "C" {
 #include <wayland-server-core.h>
 #include <wayland-util.h>
+#include <xf86drm.h>
 
+#include <wlr/backend/interface.h>
+
+#include <wlr/backend.h>
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/util/log.h>
 }
@@ -17,6 +21,7 @@ extern "C" {
 #include "output.hpp"
 #include "seat.hpp"
 #include "server.hpp"
+#include "util.hpp"
 #include "xdg_shell.hpp"
 #include "xwayland.hpp"
 
@@ -38,6 +43,15 @@ int main(int argc, char *argv[]) {
   if (optind < argc) {
     std::printf("Usage: %s [-s startup command]\n", argv[0]);
     return 0;
+  }
+
+  /* if vmwgfx driver is detected, dont use hardware cursors
+   * unless the user asks for it explicitly by exporting 
+   * WLR_NO_HARDWARE_CURSORS=0 */
+  if (getenv("WLR_NO_HARDWARE_CURSORS") == nullptr) {
+    if (possible_no_hardware_cursor_support()) {
+      setenv("WLR_NO_HARDWARE_CURSORS", "1", 1);
+    }
   }
 
   struct ti_server server;
@@ -99,7 +113,7 @@ int main(int argc, char *argv[]) {
    * Xcursor themes to source cursor images from and makes sure that cursor
    * images are available at all scale factors on the screen (necessary for
    * HiDPI support). We add a cursor theme at scale factor 1 to begin with. */
-  server.cursor_mgr = wlr_xcursor_manager_create(NULL, 24);
+  server.cursor_mgr = wlr_xcursor_manager_create(nullptr, 24);
   wlr_xcursor_manager_load(server.cursor_mgr, 1);
 
   /*
