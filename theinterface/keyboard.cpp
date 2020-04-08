@@ -1,7 +1,10 @@
 #include <cstdlib>
+#include <csignal>
 
-extern "C"{
+extern "C" {
+#include <wlr/backend/multi.h>
 #include <wlr/types/wlr_keyboard.h>
+#include <wlr/util/log.h>
 }
 
 #include "keyboard.hpp"
@@ -26,46 +29,107 @@ static void keyboard_handle_modifiers(struct wl_listener *listener,
                                      &keyboard->device->keyboard->modifiers);
 }
 
-static bool handle_keybinding(struct ti_server *server, xkb_keysym_t sym) {
-  /*
-   * Here we handle compositor keybindings. This is when the compositor is
-   * processing keys, rather than passing them on to the client for its own
-   * processing.
-   *
-   * This function assumes Alt is held down.
-   */
-  switch (sym) {
-  case XKB_KEY_Escape: {
-    wl_display_terminate(server->wl_display);
-    break;
-  }
-  case XKB_KEY_F1: {
-    /* Cycle to the next view */
-    if (wl_list_length(&server->views) < 2) {
-      break;
+/** Change virtual terminal to the one specified by keysym
+ * called by using ctrl+alt+fn1..12 keys */
+static bool ti_chvt(ti_server *server, uint32_t keysym) {
+  if (wlr_backend_is_multi(server->backend)) {
+    struct wlr_session *session = wlr_backend_get_session(server->backend);
+    if (session) {
+      unsigned vt = keysym - XKB_KEY_XF86Switch_VT_1 + 1;
+      wlr_session_change_vt(session, vt);
+      return true;
     }
-    struct ti_xdg_view *current_view =
-        wl_container_of(server->views.next, current_view, link);
-    struct ti_xdg_view *next_view =
-        wl_container_of(current_view->link.next, next_view, link);
-    focus_view(next_view, next_view->xdg_surface->surface);
-    /* Move the previous view to the end of the list */
-    wl_list_remove(&current_view->link);
-    wl_list_insert(server->views.prev, &current_view->link);
-    break;
   }
-  default: {
+  return false;
+}
+
+/** Start the alt+tab handler */
+static bool ti_alt_tab(ti_server *server, uint32_t keysym) {
+  /* Cycle to the next view */
+  if (wl_list_length(&server->views) < 2) {
     return false;
   }
-  }
+  struct ti_xdg_view *current_view =
+      wl_container_of(server->views.next, current_view, link);
+  struct ti_xdg_view *next_view =
+      wl_container_of(current_view->link.next, next_view, link);
+  focus_view(next_view, next_view->xdg_surface->surface);
+  /* Move the previous view to the end of the list */
+  wl_list_remove(&current_view->link);
+  wl_list_insert(server->views.prev, &current_view->link);
   return true;
+}
+
+/** alt+f4 handler */
+static bool ti_alt_f4(ti_server *server, uint32_t keysym) {
+  struct ti_xdg_view *current_view =
+    wl_container_of(server->views.next, current_view, link);
+  kill(current_view->pid, SIGKILL);
+  return true;
+}
+
+/*
+ * Here we handle compositor keybindings. This is when the compositor is
+ * processing keys, rather than passing them on to the client for its own
+ * processing.
+ */
+static bool handle_keybinding(struct ti_server *server,
+                              const xkb_keysym_t *syms, uint32_t modifiers,
+                              size_t syms_len) {
+  xkb_keysym_t keysym;
+  switch (modifiers) {
+  case WLR_MODIFIER_LOGO: {
+    for (size_t i = 0; i < syms_len; ++i) {
+      keysym = syms[i];
+      switch (keysym) {
+      case XKB_KEY_Escape: {
+        wl_display_terminate(server->wl_display);
+        return true;
+      }
+      }
+    }
+    break;
+  }
+  case (WLR_MODIFIER_ALT | WLR_MODIFIER_CTRL): {
+    for (size_t i = 0; i < syms_len; ++i) {
+      keysym = syms[i];
+      switch (keysym) {
+      /* These are specially mapped keys, each of them composed by
+       * CTRL+ALT+fnkey1..12*/
+      case XKB_KEY_XF86Switch_VT_1 ... XKB_KEY_XF86Switch_VT_12: {
+        ti_chvt(server, keysym);
+        return true;
+      }
+      }
+    }
+    break;
+  }
+  case WLR_MODIFIER_ALT: {
+    for (size_t i = 0; i < syms_len; ++i) {
+      keysym = syms[i];
+      switch (keysym) {
+      case XKB_KEY_Tab: {
+        ti_alt_tab(server, keysym);
+        return true;
+      }
+      case XKB_KEY_F4: {
+        ti_alt_f4(server, keysym);
+        return true;
+      }
+      }
+    }
+    break;
+  }
+  }
+  return false;
 }
 
 static void keyboard_handle_key(struct wl_listener *listener, void *data) {
   /* This event is raised when a key is pressed or released. */
   struct ti_keyboard *keyboard = wl_container_of(listener, keyboard, key);
   struct ti_server *server = keyboard->server;
-  struct wlr_event_keyboard_key *event = (struct wlr_event_keyboard_key *)data;
+  struct wlr_event_keyboard_key *event =
+      static_cast<struct wlr_event_keyboard_key *>(data);
   struct wlr_seat *seat = server->seat;
 
   /* Translate libinput keycode -> xkbcommon */
@@ -77,12 +141,10 @@ static void keyboard_handle_key(struct wl_listener *listener, void *data) {
 
   bool handled = false;
   uint32_t modifiers = wlr_keyboard_get_modifiers(keyboard->device->keyboard);
-  if ((modifiers & WLR_MODIFIER_ALT) && event->state == WLR_KEY_PRESSED) {
-    /* If alt is held down and this button was _pressed_, we attempt to
+  if (event->state == WLR_KEY_PRESSED) {
+    /* If a key was _pressed_, we attempt to
      * process it as a compositor keybinding. */
-    for (int i = 0; i < nsyms; i++) {
-      handled = handle_keybinding(server, syms[i]);
-    }
+    handled = handle_keybinding(server, syms, modifiers, nsyms);
   }
 
   if (!handled) {

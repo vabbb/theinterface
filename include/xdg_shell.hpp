@@ -12,6 +12,8 @@ struct ti_xdg_view {
   struct wl_listener destroy;
   struct wl_listener request_move;
   struct wl_listener request_resize;
+
+  pid_t pid;
   bool mapped;
   int x, y;
 };

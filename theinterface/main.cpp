@@ -1,4 +1,3 @@
-#include <cstdbool>
 #include <cstdio>
 #include <cstdlib>
 #include <getopt.h>
@@ -26,7 +25,14 @@ extern "C" {
 #include "xwayland.hpp"
 
 int main(int argc, char *argv[]) {
-  wlr_log_init(WLR_DEBUG, NULL);
+  /// using the debug env var slows the compositor down significantly
+  const bool DEBUG = getenv("DEBUG");
+  if (DEBUG) {
+    wlr_log_init(WLR_DEBUG, NULL);
+  } else {
+    wlr_log_init(WLR_INFO, NULL);
+  }
+
   char *startup_cmd = NULL;
 
   int c;
@@ -46,11 +52,11 @@ int main(int argc, char *argv[]) {
   }
 
   /* if vmwgfx driver is detected, dont use hardware cursors
-   * unless the user asks for it explicitly by exporting 
+   * unless the user asks for it explicitly by exporting
    * WLR_NO_HARDWARE_CURSORS=0 */
   if (getenv("WLR_NO_HARDWARE_CURSORS") == nullptr) {
     if (possible_no_hardware_cursor_support()) {
-      setenv("WLR_NO_HARDWARE_CURSORS", "1", 1);
+      setenv("WLR_NO_HARDWARE_CURSORS", "1", true);
     }
   }
 

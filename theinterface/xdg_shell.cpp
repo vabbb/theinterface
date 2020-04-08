@@ -52,7 +52,7 @@ static void xdg_surface_destroy(struct wl_listener *listener, void *data) {
   /* Called when the surface is destroyed and should never be shown again. */
   struct ti_xdg_view *view = wl_container_of(listener, view, destroy);
   wl_list_remove(&view->link);
-  
+
   // wlr_log(WLR_DEBUG, "AAAAAAAAAAAAAAAAA free view %p", view);
   free(view);
   // delete view;
@@ -133,9 +133,14 @@ void server_new_xdg_surface(struct wl_listener *listener, void *data) {
   /* Allocate a ti_xdg_view for this surface */
   struct ti_xdg_view *view = // new struct ti_xdg_view;
       (struct ti_xdg_view *)calloc(1, sizeof(struct ti_xdg_view));
-  // wlr_log(WLR_DEBUG, "AAAAAAAAAAAAAAAAA calloc view %p", view);
+
   view->server = server;
   view->xdg_surface = xdg_surface;
+
+  // ONLY WORKS WITH WAYLAND SURFACES!! DOESNT WORK WITH XWAYLAND
+  struct wl_client *client =
+      wl_resource_get_client(view->xdg_surface->resource);
+  wl_client_get_credentials(client, &(view->pid), NULL, NULL);
 
   /* Listen to the various events it can emit */
   view->map.notify = xdg_surface_map;

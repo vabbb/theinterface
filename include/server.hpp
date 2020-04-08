@@ -37,6 +37,7 @@ struct ti_server {
   struct wl_listener request_cursor;
   struct wl_list keyboards;
   enum ti_cursor_mode cursor_mode;
+
   struct ti_xdg_view *grabbed_view;
   double grab_x, grab_y;
   int grab_width, grab_height;
@@ -45,7 +46,6 @@ struct ti_server {
   struct wlr_output_layout *output_layout;
   struct wl_list outputs;
   struct wl_listener new_output;
-
 };
 
 #endif

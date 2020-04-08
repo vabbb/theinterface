@@ -11,19 +11,11 @@ theinterface_sources = files(
   'xwayland.cpp',
 )
 
-# theinterface_deps = [
-#   pixman,
-#   wlroots,
-#   wayland_server,
-#   xkbcommon,
-#   cairo,
-#   server_protos,
-# ]
-
 executable(
   meson.project_name(),
   theinterface_sources,
   include_directories: [ theinterface_inc ],
   dependencies: theinterface_deps,
+  # cpp_args: '-fopenmp',
   install: true,
 )
