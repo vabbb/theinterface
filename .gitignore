@@ -12,3 +12,6 @@ wayland-*-protocol.*
 .vscode/
 log.txt
 vgcore.*
+GPATH
+GRTAGS
+GTAGS
