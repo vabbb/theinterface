@@ -6,7 +6,7 @@
 #include "seat.hpp"
 
 void seat_request_cursor(struct wl_listener *listener, void *data) {
-  struct ti_server *server = wl_container_of(listener, server, request_cursor);
+  ti_server *server = wl_container_of(listener, server, request_cursor);
   /* This event is rasied by the seat when a client provides a cursor image */
   struct wlr_seat_pointer_request_set_cursor_event *event =
       (struct wlr_seat_pointer_request_set_cursor_event *)data;
@@ -53,9 +53,9 @@ bool view_at(struct ti_xdg_view *view, double lx, double ly,
   return false;
 }
 
-struct ti_xdg_view *desktop_view_at(struct ti_server *server, double lx,
-                                    double ly, struct wlr_surface **surface,
-                                    double *sx, double *sy) {
+struct ti_xdg_view *desktop_view_at(ti_server *server, double lx, double ly,
+                                    struct wlr_surface **surface, double *sx,
+                                    double *sy) {
   /* This iterates over all of our surfaces and attempts to find one under the
    * cursor. This relies on server->views being ordered from top-to-bottom. */
   struct ti_xdg_view *view;

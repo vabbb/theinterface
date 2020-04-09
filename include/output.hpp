@@ -1,9 +1,11 @@
 #ifndef TI_OUTPUT_HPP
 #define TI_OUTPUT_HPP
 
+#include "server.hpp"
+
 struct ti_output {
   struct wl_list link;
-  struct ti_server *server;
+  ti_server *server;
   struct wlr_output *wlr_output;
   struct wl_listener frame;
 };

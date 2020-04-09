@@ -11,7 +11,8 @@ project(
     'b_lto=true',
     'b_pie=true',
     'optimization=2',
-    'debug=false',
+    'debug=true',
+    'layout=mirror'
   ],
 )
 

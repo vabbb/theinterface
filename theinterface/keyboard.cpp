@@ -1,5 +1,5 @@
-#include <cstdlib>
 #include <csignal>
+#include <cstdlib>
 
 extern "C" {
 #include <wlr/backend/multi.h>
@@ -63,7 +63,7 @@ static bool ti_alt_tab(ti_server *server, uint32_t keysym) {
 /** alt+f4 handler */
 static bool ti_alt_f4(ti_server *server, uint32_t keysym) {
   struct ti_xdg_view *current_view =
-    wl_container_of(server->views.next, current_view, link);
+      wl_container_of(server->views.next, current_view, link);
   kill(current_view->pid, SIGKILL);
   return true;
 }
@@ -73,9 +73,8 @@ static bool ti_alt_f4(ti_server *server, uint32_t keysym) {
  * processing keys, rather than passing them on to the client for its own
  * processing.
  */
-static bool handle_keybinding(struct ti_server *server,
-                              const xkb_keysym_t *syms, uint32_t modifiers,
-                              size_t syms_len) {
+static bool handle_keybinding(ti_server *server, const xkb_keysym_t *syms,
+                              uint32_t modifiers, size_t syms_len) {
   xkb_keysym_t keysym;
   switch (modifiers) {
   case WLR_MODIFIER_LOGO: {
@@ -83,6 +82,7 @@ static bool handle_keybinding(struct ti_server *server,
       keysym = syms[i];
       switch (keysym) {
       case XKB_KEY_Escape: {
+        // this will terminate wl_display_run, causing it to return
         wl_display_terminate(server->wl_display);
         return true;
       }
@@ -127,7 +127,7 @@ static bool handle_keybinding(struct ti_server *server,
 static void keyboard_handle_key(struct wl_listener *listener, void *data) {
   /* This event is raised when a key is pressed or released. */
   struct ti_keyboard *keyboard = wl_container_of(listener, keyboard, key);
-  struct ti_server *server = keyboard->server;
+  ti_server *server = keyboard->server;
   struct wlr_event_keyboard_key *event =
       static_cast<struct wlr_event_keyboard_key *>(data);
   struct wlr_seat *seat = server->seat;
@@ -155,11 +155,10 @@ static void keyboard_handle_key(struct wl_listener *listener, void *data) {
   }
 }
 
-void server_new_keyboard(struct ti_server *server,
-                         struct wlr_input_device *device) {
+void ti_server::new_keyboard(struct wlr_input_device *device) {
   struct ti_keyboard *keyboard =
       (struct ti_keyboard *)calloc(1, sizeof(struct ti_keyboard));
-  keyboard->server = server;
+  keyboard->server = this;
   keyboard->device = device;
 
   /* We need to prepare an XKB keymap and assign it to the keyboard. This
@@ -184,8 +183,8 @@ void server_new_keyboard(struct ti_server *server,
   keyboard->key.notify = keyboard_handle_key;
   wl_signal_add(&device->keyboard->events.key, &keyboard->key);
 
-  wlr_seat_set_keyboard(server->seat, device);
+  wlr_seat_set_keyboard(this->seat, device);
 
   /* And add the keyboard to our list of keyboards */
-  wl_list_insert(&server->keyboards, &keyboard->link);
+  wl_list_insert(&this->keyboards, &keyboard->link);
 }

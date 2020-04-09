@@ -8,13 +8,14 @@ extern "C" {
 #include <wlr/types/wlr_xdg_shell.h>
 }
 
-#include "cursor.hpp"
-
-struct ti_server {
 #ifdef WLR_HAS_XWAYLAND
-  struct wlr_xwayland *xwayland;
+#include "xwayland.hpp"
 #endif
 
+#include "cursor.hpp"
+
+class ti_server {
+public:
   struct wl_display *wl_display;
   struct wlr_backend *backend;
   struct wlr_renderer *renderer;
@@ -22,6 +23,10 @@ struct ti_server {
 
   struct wlr_xdg_shell *xdg_shell;
   struct wl_listener new_xdg_surface;
+#ifdef WLR_HAS_XWAYLAND
+  struct wlr_xwayland *xwayland;
+  struct wl_listener new_xwayland_surface;
+#endif
   struct wl_list views;
 
   struct wlr_cursor *cursor;
@@ -46,6 +51,11 @@ struct ti_server {
   struct wlr_output_layout *output_layout;
   struct wl_list outputs;
   struct wl_listener new_output;
+
+  ti_server();
+  ~ti_server();
+  void new_keyboard(struct wlr_input_device *device);
+  void new_pointer(struct wlr_input_device *device);
 };
 
 #endif

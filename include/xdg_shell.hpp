@@ -2,10 +2,11 @@
 #define TI_XDG_SHELL_HPP
 
 #include "cursor.hpp"
+#include "server.hpp"
 
 struct ti_xdg_view {
   struct wl_list link;
-  struct ti_server *server;
+  ti_server *server;
   struct wlr_xdg_surface *xdg_surface;
   struct wl_listener map;
   struct wl_listener unmap;

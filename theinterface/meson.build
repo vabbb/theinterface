@@ -7,6 +7,7 @@ theinterface_sources = files(
   'seat.cpp',
   'server.cpp',
   'util.cpp',
+  'view.cpp',
   'xdg_shell.cpp',
   'xwayland.cpp',
 )

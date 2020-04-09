@@ -71,7 +71,7 @@ static void output_frame(struct wl_listener *listener, void *data) {
 void server_new_output(struct wl_listener *listener, void *data) {
   /* This event is rasied by the backend when a new output (aka a display or
    * monitor) becomes available. */
-  struct ti_server *server = wl_container_of(listener, server, new_output);
+  ti_server *server = wl_container_of(listener, server, new_output);
   struct wlr_output *wlr_output = static_cast<struct wlr_output *>(data);
 
   /* Some backends don't have modes. DRM+KMS does, and we need to set a mode

@@ -12,7 +12,7 @@ static void begin_interactive(struct ti_xdg_view *view,
   /* This function sets up an interactive move or resize operation, where the
    * compositor stops propegating pointer events to clients and instead
    * consumes them itself, to move or resize windows. */
-  struct ti_server *server = view->server;
+  ti_server *server = view->server;
   struct wlr_surface *focused_surface =
       server->seat->pointer_state.focused_surface;
   if (view->xdg_surface->surface != focused_surface) {
@@ -87,7 +87,7 @@ void focus_view(struct ti_xdg_view *view, struct wlr_surface *surface) {
   if (view == NULL) {
     return;
   }
-  struct ti_server *server = view->server;
+  ti_server *server = view->server;
   struct wlr_seat *seat = server->seat;
   struct wlr_surface *prev_surface = seat->keyboard_state.focused_surface;
   if (prev_surface == surface) {
@@ -123,7 +123,7 @@ void focus_view(struct ti_xdg_view *view, struct wlr_surface *surface) {
 void server_new_xdg_surface(struct wl_listener *listener, void *data) {
   /* This event is raised when wlr_xdg_shell receives a new xdg surface from a
    * client, either a toplevel (application window) or popup. */
-  struct ti_server *server = wl_container_of(listener, server, new_xdg_surface);
+  ti_server *server = wl_container_of(listener, server, new_xdg_surface);
   struct wlr_xdg_surface *xdg_surface =
       static_cast<struct wlr_xdg_surface *>(data);
   if (xdg_surface->role != WLR_XDG_SURFACE_ROLE_TOPLEVEL) {
