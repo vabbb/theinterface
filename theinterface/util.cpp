@@ -1,14 +1,12 @@
 #include <algorithm>
 #include <cstdio>
+#include <fcntl.h> //needed for open
+#include <libudev.h>
 #include <string>
-
-extern "C" {
-#include <fcntl.h>  //needed for open
 #include <unistd.h> //needed for close
-
 #include <xf86drm.h>
 
-#include <libudev.h>
+extern "C" {
 #include <wlr/util/log.h>
 }
 

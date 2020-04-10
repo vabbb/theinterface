@@ -37,7 +37,7 @@ static void output_frame(struct wl_listener *listener, void *data) {
 
   /* Each subsequent window we render is rendered on top of the last. Because
    * our view list is ordered front-to-back, we iterate over it backwards. */
-  struct ti_xdg_view *view;
+  ti::xdg_view *view;
   wl_list_for_each_reverse(view, &output->server->views, link) {
     if (!view->mapped) {
       /* An unmapped view should not be rendered. */
@@ -71,7 +71,7 @@ static void output_frame(struct wl_listener *listener, void *data) {
 void server_new_output(struct wl_listener *listener, void *data) {
   /* This event is rasied by the backend when a new output (aka a display or
    * monitor) becomes available. */
-  ti_server *server = wl_container_of(listener, server, new_output);
+  ti::server *server = wl_container_of(listener, server, new_output);
   struct wlr_output *wlr_output = static_cast<struct wlr_output *>(data);
 
   /* Some backends don't have modes. DRM+KMS does, and we need to set a mode

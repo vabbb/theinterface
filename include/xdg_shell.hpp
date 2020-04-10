@@ -3,23 +3,20 @@
 
 #include "cursor.hpp"
 #include "server.hpp"
+#include "view.hpp"
 
-struct ti_xdg_view {
-  struct wl_list link;
-  ti_server *server;
+namespace ti {
+
+// xdg_view is an implementation of the view interface
+class xdg_view : public view {
+public:
   struct wlr_xdg_surface *xdg_surface;
-  struct wl_listener map;
-  struct wl_listener unmap;
-  struct wl_listener destroy;
-  struct wl_listener request_move;
-  struct wl_listener request_resize;
 
-  pid_t pid;
-  bool mapped;
-  int x, y;
+  xdg_view();
 };
+} // namespace ti
 
-void focus_view(struct ti_xdg_view *view, struct wlr_surface *surface);
+void focus_view(ti::xdg_view *view, struct wlr_surface *surface);
 void server_new_xdg_surface(struct wl_listener *listener, void *data);
 
 #endif

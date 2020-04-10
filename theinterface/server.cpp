@@ -9,10 +9,10 @@ extern "C" {
 #include "xdg_shell.hpp"
 #include "xwayland.hpp"
 
-ti_server::ti_server() {
+ti::server ::server() {
   /* The Wayland display is managed by libwayland. It handles accepting
    * clients from the Unix socket, manging Wayland globals, and so on. */
-  wl_display = wl_display_create();
+  display = wl_display_create();
   /* The backend is a wlroots feature which abstracts the underlying input and
    * output hardware. The autocreate option will choose the most suitable
    * backend based on the current environment, such as opening an X11 window
@@ -21,20 +21,20 @@ ti_server::ti_server() {
    * backend uses the renderer, for example, to fall back to software cursors
    * if the backend does not support hardware cursors (some older GPUs
    * don't). */
-  backend = wlr_backend_autocreate(wl_display, NULL);
+  backend = wlr_backend_autocreate(display, NULL);
 
   /* If we don't provide a renderer, autocreate makes a GLES2 renderer for us.
    * The renderer is responsible for defining the various pixel formats it
    * supports for shared memory, this configures that for clients. */
   renderer = wlr_backend_get_renderer(backend);
-  wlr_renderer_init_wl_display(renderer, wl_display);
+  wlr_renderer_init_wl_display(renderer, display);
 
   /* This creates some hands-off wlroots interfaces. The compositor is
    * necessary for clients to allocate surfaces and the data device manager
    * handles the clipboard. Each of these wlroots interfaces has room for you
    * to dig your fingers in and play with their behavior if you want. */
-  compositor = wlr_compositor_create(wl_display, renderer);
-  wlr_data_device_manager_create(wl_display);
+  compositor = wlr_compositor_create(display, renderer);
+  wlr_data_device_manager_create(display);
 
   /* Creates an output layout, which a wlroots utility for working with an
    * arrangement of screens in a physical layout. */
@@ -53,7 +53,7 @@ ti_server::ti_server() {
    * https://drewdevault.com/2018/07/29/Wayland-shells.html
    */
   wl_list_init(&views);
-  xdg_shell = wlr_xdg_shell_create(wl_display);
+  xdg_shell = wlr_xdg_shell_create(display);
   new_xdg_surface.notify = server_new_xdg_surface;
   wl_signal_add(&xdg_shell->events.new_surface, &new_xdg_surface);
 
@@ -86,8 +86,7 @@ ti_server::ti_server() {
   cursor_motion.notify = server_cursor_motion;
   wl_signal_add(&cursor->events.motion, &cursor_motion);
   cursor_motion_absolute.notify = server_cursor_motion_absolute;
-  wl_signal_add(&cursor->events.motion_absolute,
-                &cursor_motion_absolute);
+  wl_signal_add(&cursor->events.motion_absolute, &cursor_motion_absolute);
   cursor_button.notify = server_cursor_button;
   wl_signal_add(&cursor->events.button, &cursor_button);
   cursor_axis.notify = server_cursor_axis;
@@ -104,12 +103,12 @@ ti_server::ti_server() {
   wl_list_init(&keyboards);
   new_input.notify = server_new_input;
   wl_signal_add(&backend->events.new_input, &new_input);
-  seat = wlr_seat_create(wl_display, "seat0");
+  seat = wlr_seat_create(display, "seat0");
   request_cursor.notify = seat_request_cursor;
   wl_signal_add(&seat->events.request_set_cursor, &request_cursor);
 
   /* Add a Unix socket to the Wayland display. */
-  const char *socket = wl_display_add_socket_auto(wl_display);
+  const char *socket = wl_display_add_socket_auto(display);
   if (!socket) {
     wlr_backend_destroy(backend);
     exit(EXIT_FAILURE);
@@ -119,13 +118,12 @@ ti_server::ti_server() {
    * master, etc */
   if (!wlr_backend_start(backend)) {
     wlr_backend_destroy(backend);
-    wl_display_destroy(wl_display);
+    wl_display_destroy(display);
     exit(EXIT_FAILURE);
   }
 
 #ifdef WLR_HAS_XWAYLAND
-  xwayland =
-      wlr_xwayland_create(wl_display, compositor, false);
+  xwayland = wlr_xwayland_create(display, compositor, false);
   setenv("DISPLAY", xwayland->display_name, true);
 #endif
 
@@ -136,12 +134,12 @@ ti_server::ti_server() {
 }
 
 /// automatically run when the program is about to exit
-ti_server::~ti_server() {
-  wlr_log(WLR_INFO, "Deallocating ti_server resources");
+ti::server ::~server() {
+  wlr_log(WLR_INFO, "Deallocating server resources");
 #ifdef WLR_HAS_XWAYLAND
   wlr_xwayland_destroy(xwayland);
 #endif
   /* Once wl_display_run returns, we shut down the server. */
-  wl_display_destroy_clients(wl_display);
-  wl_display_destroy(wl_display);
+  wl_display_destroy_clients(display);
+  wl_display_destroy(display);
 }

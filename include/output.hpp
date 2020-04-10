@@ -5,7 +5,7 @@
 
 struct ti_output {
   struct wl_list link;
-  ti_server *server;
+  ti::server *server;
   struct wlr_output *wlr_output;
   struct wl_listener frame;
 };

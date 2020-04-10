@@ -11,7 +11,7 @@ extern "C" {
 
 #include "cursor.hpp"
 
-void ti_server::new_pointer(struct wlr_input_device *device) {
+void ti::server::new_pointer(struct wlr_input_device *device) {
   /* We don't do anything special with pointers. All of our pointer handling
    * is proxied through wlr_cursor. On another compositor, you might take this
    * opportunity to do libinput configuration on the device to set
@@ -22,7 +22,7 @@ void ti_server::new_pointer(struct wlr_input_device *device) {
 void server_new_input(struct wl_listener *listener, void *data) {
   /* This event is raised by the backend when a new input device becomes
    * available. */
-  ti_server *server = wl_container_of(listener, server, new_input);
+  ti::server *server = wl_container_of(listener, server, new_input);
   struct wlr_input_device *device =
       static_cast<struct wlr_input_device *>(data);
 
@@ -46,13 +46,13 @@ void server_new_input(struct wl_listener *listener, void *data) {
   wlr_seat_set_capabilities(server->seat, caps);
 }
 
-static void process_cursor_move(ti_server *server, uint32_t time) {
+static void process_cursor_move(ti::server *server, uint32_t time) {
   /* Move the grabbed view to the new position. */
-  server->grabbed_view->x = server->cursor->x - server->grab_x;
-  server->grabbed_view->y = server->cursor->y - server->grab_y;
+  server->grabbed_xdg_view->x = server->cursor->x - server->grab_x;
+  server->grabbed_xdg_view->y = server->cursor->y - server->grab_y;
 }
 
-static void process_cursor_resize(ti_server *server, uint32_t time) {
+static void process_cursor_resize(ti::server *server, uint32_t time) {
   /*
    * Resizing the grabbed view can be a little bit complicated, because we
    * could be resizing from any corner or edge. This not only resizes the view
@@ -63,7 +63,7 @@ static void process_cursor_resize(ti_server *server, uint32_t time) {
    * you'd wait for the client to prepare a buffer at the new size, then
    * commit any movement that was prepared.
    */
-  struct ti_xdg_view *view = server->grabbed_view;
+  ti::xdg_view *view = server->grabbed_xdg_view;
   double dx = server->cursor->x - server->grab_x;
   double dy = server->cursor->y - server->grab_y;
   double x = view->x;
@@ -93,7 +93,7 @@ static void process_cursor_resize(ti_server *server, uint32_t time) {
   wlr_xdg_toplevel_set_size(view->xdg_surface, width, height);
 }
 
-static void process_cursor_motion(ti_server *server, uint32_t time) {
+static void process_cursor_motion(ti::server *server, uint32_t time) {
   /* If the mode is non-passthrough, delegate to those functions. */
   if (server->cursor_mode == TI_CURSOR_MOVE) {
     process_cursor_move(server, time);
@@ -107,8 +107,8 @@ static void process_cursor_motion(ti_server *server, uint32_t time) {
   double sx, sy;
   struct wlr_seat *seat = server->seat;
   struct wlr_surface *surface = NULL;
-  struct ti_xdg_view *view = desktop_view_at(
-      server, server->cursor->x, server->cursor->y, &surface, &sx, &sy);
+  ti::view *view = desktop_view_at(server, server->cursor->x, server->cursor->y,
+                                   &surface, &sx, &sy);
   if (!view) {
     /* If there's no view under the cursor, set the cursor image to a
      * default. This is what makes the cursor image appear when you move it
@@ -142,7 +142,7 @@ static void process_cursor_motion(ti_server *server, uint32_t time) {
 void server_cursor_motion(struct wl_listener *listener, void *data) {
   /* This event is forwarded by the cursor when a pointer emits a _relative_
    * pointer motion event (i.e. a delta) */
-  ti_server *server = wl_container_of(listener, server, cursor_motion);
+  ti::server *server = wl_container_of(listener, server, cursor_motion);
   struct wlr_event_pointer_motion *event =
       (struct wlr_event_pointer_motion *)data;
   /* The cursor doesn't move unless we tell it to. The cursor automatically
@@ -162,7 +162,8 @@ void server_cursor_motion_absolute(struct wl_listener *listener, void *data) {
    * move the mouse over the window. You could enter the window from any edge,
    * so we have to warp the mouse there. There is also some hardware which
    * emits these events. */
-  ti_server *server = wl_container_of(listener, server, cursor_motion_absolute);
+  ti::server *server =
+      wl_container_of(listener, server, cursor_motion_absolute);
   struct wlr_event_pointer_motion_absolute *event =
       (struct wlr_event_pointer_motion_absolute *)data;
   wlr_cursor_warp_absolute(server->cursor, event->device, event->x, event->y);
@@ -172,7 +173,7 @@ void server_cursor_motion_absolute(struct wl_listener *listener, void *data) {
 void server_cursor_button(struct wl_listener *listener, void *data) {
   /* This event is forwarded by the cursor when a pointer emits a button
    * event. */
-  ti_server *server = wl_container_of(listener, server, cursor_button);
+  ti::server *server = wl_container_of(listener, server, cursor_button);
   struct wlr_event_pointer_button *event =
       static_cast<struct wlr_event_pointer_button *>(data);
   /* Notify the client with pointer focus that a button press has occurred */
@@ -181,8 +182,8 @@ void server_cursor_button(struct wl_listener *listener, void *data) {
   double sx, sy;
   struct wlr_seat *seat = server->seat;
   struct wlr_surface *surface = NULL;
-  struct ti_xdg_view *view = desktop_view_at(
-      server, server->cursor->x, server->cursor->y, &surface, &sx, &sy);
+  ti::xdg_view *view = desktop_view_at(server, server->cursor->x,
+                                       server->cursor->y, &surface, &sx, &sy);
   if (event->state == WLR_BUTTON_RELEASED) {
     /* If you released any buttons, we exit interactive move/resize mode. */
     server->cursor_mode = TI_CURSOR_PASSTHROUGH;
@@ -195,7 +196,7 @@ void server_cursor_button(struct wl_listener *listener, void *data) {
 void server_cursor_axis(struct wl_listener *listener, void *data) {
   /* This event is forwarded by the cursor when a pointer emits an axis event,
    * for example when you move the scroll wheel. */
-  ti_server *server = wl_container_of(listener, server, cursor_axis);
+  ti::server *server = wl_container_of(listener, server, cursor_axis);
   struct wlr_event_pointer_axis *event = (struct wlr_event_pointer_axis *)data;
   /* Notify the client with pointer focus of the axis event. */
   wlr_seat_pointer_notify_axis(server->seat, event->time_msec,
@@ -208,7 +209,7 @@ void server_cursor_frame(struct wl_listener *listener, void *data) {
    * event. Frame events are sent after regular pointer events to group
    * multiple events together. For instance, two axis events may happen at the
    * same time, in which case a frame event won't be sent in between. */
-  ti_server *server = wl_container_of(listener, server, cursor_frame);
+  ti::server *server = wl_container_of(listener, server, cursor_frame);
   /* Notify the client with pointer focus of the frame event. */
   wlr_seat_pointer_notify_frame(server->seat);
 }

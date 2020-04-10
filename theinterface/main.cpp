@@ -18,7 +18,7 @@ extern "C" {
 #include "server.hpp"
 #include "util.hpp"
 
-ti_server *server;
+ti::server *server;
 
 static void ti_atexit() { delete server; }
 
@@ -58,8 +58,8 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  // Run the constructor for the ti_server class
-  server = new ti_server();
+  // Run the constructor for the ti::server class
+  server = new ti::server();
   // we will need atexit from now on, for cleanly closing the server
   atexit(ti_atexit);
 
@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
    * compositor. Starting the backend rigged up all of the necessary event
    * loop configuration to listen to libinput events, DRM events, generate
    * frame events at the refresh rate, and so on. */
-  wl_display_run(server->wl_display);
+  wl_display_run(server->display);
 
   return EXIT_SUCCESS;
 }

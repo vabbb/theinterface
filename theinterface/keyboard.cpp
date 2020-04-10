@@ -31,7 +31,7 @@ static void keyboard_handle_modifiers(struct wl_listener *listener,
 
 /** Change virtual terminal to the one specified by keysym
  * called by using ctrl+alt+fn1..12 keys */
-static bool ti_chvt(ti_server *server, uint32_t keysym) {
+static bool ti_chvt(ti::server *server, uint32_t keysym) {
   if (wlr_backend_is_multi(server->backend)) {
     struct wlr_session *session = wlr_backend_get_session(server->backend);
     if (session) {
@@ -44,14 +44,14 @@ static bool ti_chvt(ti_server *server, uint32_t keysym) {
 }
 
 /** Start the alt+tab handler */
-static bool ti_alt_tab(ti_server *server, uint32_t keysym) {
+static bool ti_alt_tab(ti::server *server, uint32_t keysym) {
   /* Cycle to the next view */
   if (wl_list_length(&server->views) < 2) {
     return false;
   }
-  struct ti_xdg_view *current_view =
+  ti::xdg_view *current_view =
       wl_container_of(server->views.next, current_view, link);
-  struct ti_xdg_view *next_view =
+  ti::xdg_view *next_view =
       wl_container_of(current_view->link.next, next_view, link);
   focus_view(next_view, next_view->xdg_surface->surface);
   /* Move the previous view to the end of the list */
@@ -61,8 +61,8 @@ static bool ti_alt_tab(ti_server *server, uint32_t keysym) {
 }
 
 /** alt+f4 handler */
-static bool ti_alt_f4(ti_server *server, uint32_t keysym) {
-  struct ti_xdg_view *current_view =
+static bool ti_alt_f4(ti::server *server, uint32_t keysym) {
+  ti::xdg_view *current_view =
       wl_container_of(server->views.next, current_view, link);
   kill(current_view->pid, SIGKILL);
   return true;
@@ -73,7 +73,7 @@ static bool ti_alt_f4(ti_server *server, uint32_t keysym) {
  * processing keys, rather than passing them on to the client for its own
  * processing.
  */
-static bool handle_keybinding(ti_server *server, const xkb_keysym_t *syms,
+static bool handle_keybinding(ti::server *server, const xkb_keysym_t *syms,
                               uint32_t modifiers, size_t syms_len) {
   xkb_keysym_t keysym;
   switch (modifiers) {
@@ -83,7 +83,7 @@ static bool handle_keybinding(ti_server *server, const xkb_keysym_t *syms,
       switch (keysym) {
       case XKB_KEY_Escape: {
         // this will terminate wl_display_run, causing it to return
-        wl_display_terminate(server->wl_display);
+        wl_display_terminate(server->display);
         return true;
       }
       }
@@ -127,7 +127,7 @@ static bool handle_keybinding(ti_server *server, const xkb_keysym_t *syms,
 static void keyboard_handle_key(struct wl_listener *listener, void *data) {
   /* This event is raised when a key is pressed or released. */
   struct ti_keyboard *keyboard = wl_container_of(listener, keyboard, key);
-  ti_server *server = keyboard->server;
+  ti::server *server = keyboard->server;
   struct wlr_event_keyboard_key *event =
       static_cast<struct wlr_event_keyboard_key *>(data);
   struct wlr_seat *seat = server->seat;
@@ -155,7 +155,7 @@ static void keyboard_handle_key(struct wl_listener *listener, void *data) {
   }
 }
 
-void ti_server::new_keyboard(struct wlr_input_device *device) {
+void ti::server::new_keyboard(struct wlr_input_device *device) {
   struct ti_keyboard *keyboard =
       (struct ti_keyboard *)calloc(1, sizeof(struct ti_keyboard));
   keyboard->server = this;

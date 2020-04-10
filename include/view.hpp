@@ -1,6 +1,8 @@
 #ifndef TI_VIEW_HPP
 #define TI_VIEW_HPP
 
+#include <string>
+
 extern "C" {
 #include <wayland-util.h>
 
@@ -12,27 +14,25 @@ extern "C" {
 #endif
 }
 
-#include "server.hpp"
-
-enum ti_view_type {
+namespace ti {
+enum view_type {
   TI_XDG_SHELL_VIEW,
 #if WLR_HAS_WAYLAND
   TI_XWAYLAND_VIEW,
 #endif
 };
 
-struct ti_view {
-  ti_server *server;
-  struct wl_list link;     // server::views
-  struct wl_list children; // ti_view_child::link
-  struct wlr_surface *wlr_surface;
-
+class view {
+public:
   int x, y;
   pid_t pid;
   bool mapped;
+  enum view_type type;
 
-  enum ti_view_type type;
-  const struct ti_view_impl *impl;
+  class server *server;
+  struct wl_list link;     // ti::server::views
+  struct wl_list children; // ti::view_child::link
+  struct wlr_surface *surface;
 
   struct wl_listener map;
   struct wl_listener unmap;
@@ -40,23 +40,23 @@ struct ti_view {
   struct wl_listener request_move;
   struct wl_listener request_resize;
   struct wl_listener new_subsurface;
-};
 
-struct ti_view_impl {
-  char *(*get_title)(struct ti_view *view);
-  void (*get_geometry)(struct ti_view *view, int *width_out, int *height_out);
-  bool (*is_primary)(struct ti_view *view);
-  bool (*is_transient_for)(struct ti_view *child, struct ti_view *parent);
-  void (*activate)(struct ti_view *view, bool activate);
-  void (*maximize)(struct ti_view *view, int output_width, int output_height);
-  void (*destroy)(struct ti_view *view);
-  void (*for_each_surface)(struct ti_view *view,
-                           wlr_surface_iterator_func_t iterator, void *data);
-  void (*for_each_popup)(struct ti_view *view,
-                         wlr_surface_iterator_func_t iterator, void *data);
-  struct wlr_surface *(*wlr_surface_at)(struct ti_view *view, double sx,
-                                        double sy, double *sub_x,
-                                        double *sub_y);
+  view();
+  // virtual ~view() = 0;
+  // virtual std::string getTitle() = 0;
+  // virtual void getGeometry(int *width_out, int *height_out) = 0;
+  // virtual bool isPrimary() = 0;
+  // virtual bool isTransient_for(view *child, view *parent) = 0;
+  // virtual void activate(bool activate) = 0;
+  // virtual void maximize(int output_width, int output_height) = 0;
+  // virtual void forEachSurface(wlr_surface_iterator_func_t iterator,
+  //                             void *data) = 0;
+  // virtual void forEachPopup(wlr_surface_iterator_func_t iterator,
+  //                           void *data) = 0;
+  // virtual struct wlr_surface *wlr_surface_at(double sx, double sy,
+  //                                            double *sub_x, double *sub_y) =
+  //                                            0;
 };
+} // namespace ti
 
 #endif

@@ -7,19 +7,19 @@ extern "C" {
 
 #include "xdg_shell.hpp"
 
-static void begin_interactive(struct ti_xdg_view *view,
-                              enum ti_cursor_mode mode, uint32_t edges) {
+static void begin_interactive(ti::xdg_view *view, enum ti_cursor_mode mode,
+                              uint32_t edges) {
   /* This function sets up an interactive move or resize operation, where the
    * compositor stops propegating pointer events to clients and instead
    * consumes them itself, to move or resize windows. */
-  ti_server *server = view->server;
+  ti::server *server = view->server;
   struct wlr_surface *focused_surface =
       server->seat->pointer_state.focused_surface;
   if (view->xdg_surface->surface != focused_surface) {
     /* Deny move/resize requests from unfocused clients. */
     return;
   }
-  server->grabbed_view = view;
+  server->grabbed_xdg_view = view;
   server->cursor_mode = mode;
   struct wlr_box geo_box;
   wlr_xdg_surface_get_geometry(view->xdg_surface, &geo_box);
@@ -37,25 +37,23 @@ static void begin_interactive(struct ti_xdg_view *view,
 
 static void xdg_surface_map(struct wl_listener *listener, void *data) {
   /* Called when the surface is mapped, or ready to display on-screen. */
-  struct ti_xdg_view *view = wl_container_of(listener, view, map);
+  ti::xdg_view *view = wl_container_of(listener, view, map);
   view->mapped = true;
   focus_view(view, view->xdg_surface->surface);
 }
 
 static void xdg_surface_unmap(struct wl_listener *listener, void *data) {
   /* Called when the surface is unmapped, and should no longer be shown. */
-  struct ti_xdg_view *view = wl_container_of(listener, view, unmap);
+  ti::view *view = wl_container_of(listener, view, unmap);
   view->mapped = false;
 }
 
 static void xdg_surface_destroy(struct wl_listener *listener, void *data) {
   /* Called when the surface is destroyed and should never be shown again. */
-  struct ti_xdg_view *view = wl_container_of(listener, view, destroy);
+  ti::view *view = wl_container_of(listener, view, destroy);
   wl_list_remove(&view->link);
 
-  // wlr_log(WLR_DEBUG, "AAAAAAAAAAAAAAAAA free view %p", view);
-  free(view);
-  // delete view;
+  delete view;
 }
 
 static void xdg_toplevel_request_move(struct wl_listener *listener,
@@ -65,7 +63,7 @@ static void xdg_toplevel_request_move(struct wl_listener *listener,
    * decorations. Note that a more sophisticated compositor should check the
    * provied serial against a list of button press serials sent to this
    * client, to prevent the client from requesting this whenever they want. */
-  struct ti_xdg_view *view = wl_container_of(listener, view, request_move);
+  ti::xdg_view *view = wl_container_of(listener, view, request_move);
   begin_interactive(view, TI_CURSOR_MOVE, 0);
 }
 
@@ -78,16 +76,16 @@ static void xdg_toplevel_request_resize(struct wl_listener *listener,
    * client, to prevent the client from requesting this whenever they want. */
   struct wlr_xdg_toplevel_resize_event *event =
       (struct wlr_xdg_toplevel_resize_event *)(data);
-  struct ti_xdg_view *view = wl_container_of(listener, view, request_resize);
+  ti::xdg_view *view = wl_container_of(listener, view, request_resize);
   begin_interactive(view, TI_CURSOR_RESIZE, event->edges);
 }
 
-void focus_view(struct ti_xdg_view *view, struct wlr_surface *surface) {
+void focus_view(ti::xdg_view *view, struct wlr_surface *surface) {
   /* Note: this function only deals with keyboard focus. */
   if (view == NULL) {
     return;
   }
-  ti_server *server = view->server;
+  ti::server *server = view->server;
   struct wlr_seat *seat = server->seat;
   struct wlr_surface *prev_surface = seat->keyboard_state.focused_surface;
   if (prev_surface == surface) {
@@ -123,24 +121,24 @@ void focus_view(struct ti_xdg_view *view, struct wlr_surface *surface) {
 void server_new_xdg_surface(struct wl_listener *listener, void *data) {
   /* This event is raised when wlr_xdg_shell receives a new xdg surface from a
    * client, either a toplevel (application window) or popup. */
-  ti_server *server = wl_container_of(listener, server, new_xdg_surface);
+  ti::server *server = wl_container_of(listener, server, new_xdg_surface);
   struct wlr_xdg_surface *xdg_surface =
       static_cast<struct wlr_xdg_surface *>(data);
   if (xdg_surface->role != WLR_XDG_SURFACE_ROLE_TOPLEVEL) {
     return;
   }
 
-  /* Allocate a ti_xdg_view for this surface */
-  struct ti_xdg_view *view = // new struct ti_xdg_view;
-      (struct ti_xdg_view *)calloc(1, sizeof(struct ti_xdg_view));
+  /* Allocate a ti::view for this surface */
+  ti::xdg_view *view = new ti::xdg_view;
 
   view->server = server;
   view->xdg_surface = xdg_surface;
 
+  // Find out the client's pid
   // ONLY WORKS WITH WAYLAND SURFACES!! DOESNT WORK WITH XWAYLAND
   struct wl_client *client =
       wl_resource_get_client(view->xdg_surface->resource);
-  wl_client_get_credentials(client, &(view->pid), NULL, NULL);
+  wl_client_get_credentials(client, &view->pid, NULL, NULL);
 
   /* Listen to the various events it can emit */
   view->map.notify = xdg_surface_map;
@@ -160,3 +158,5 @@ void server_new_xdg_surface(struct wl_listener *listener, void *data) {
   /* Add it to the list of views. */
   wl_list_insert(&server->views, &view->link);
 }
+
+ti::xdg_view ::xdg_view() {}

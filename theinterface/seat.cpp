@@ -6,7 +6,7 @@
 #include "seat.hpp"
 
 void seat_request_cursor(struct wl_listener *listener, void *data) {
-  ti_server *server = wl_container_of(listener, server, request_cursor);
+  ti::server *server = wl_container_of(listener, server, request_cursor);
   /* This event is rasied by the seat when a client provides a cursor image */
   struct wlr_seat_pointer_request_set_cursor_event *event =
       (struct wlr_seat_pointer_request_set_cursor_event *)data;
@@ -24,7 +24,7 @@ void seat_request_cursor(struct wl_listener *listener, void *data) {
   }
 }
 
-bool view_at(struct ti_xdg_view *view, double lx, double ly,
+bool view_at(ti::xdg_view *view, double lx, double ly,
              struct wlr_surface **surface, double *sx, double *sy) {
   /*
    * XDG toplevels may have nested surfaces, such as popup windows for context
@@ -53,12 +53,12 @@ bool view_at(struct ti_xdg_view *view, double lx, double ly,
   return false;
 }
 
-struct ti_xdg_view *desktop_view_at(ti_server *server, double lx, double ly,
-                                    struct wlr_surface **surface, double *sx,
-                                    double *sy) {
+ti::xdg_view *desktop_view_at(ti::server *server, double lx, double ly,
+                              struct wlr_surface **surface, double *sx,
+                              double *sy) {
   /* This iterates over all of our surfaces and attempts to find one under the
    * cursor. This relies on server->views being ordered from top-to-bottom. */
-  struct ti_xdg_view *view;
+  ti::xdg_view *view;
   wl_list_for_each(view, &server->views, link) {
     if (view_at(view, lx, ly, surface, sx, sy)) {
       return view;

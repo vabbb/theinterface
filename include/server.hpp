@@ -14,9 +14,10 @@ extern "C" {
 
 #include "cursor.hpp"
 
-class ti_server {
+namespace ti {
+class server {
 public:
-  struct wl_display *wl_display;
+  struct wl_display *display;
   struct wlr_backend *backend;
   struct wlr_renderer *renderer;
   struct wlr_compositor *compositor;
@@ -43,7 +44,7 @@ public:
   struct wl_list keyboards;
   enum ti_cursor_mode cursor_mode;
 
-  struct ti_xdg_view *grabbed_view;
+  struct xdg_view *grabbed_xdg_view;
   double grab_x, grab_y;
   int grab_width, grab_height;
   uint32_t resize_edges;
@@ -52,10 +53,11 @@ public:
   struct wl_list outputs;
   struct wl_listener new_output;
 
-  ti_server();
-  ~ti_server();
+  server();
+  ~server();
   void new_keyboard(struct wlr_input_device *device);
   void new_pointer(struct wlr_input_device *device);
 };
+} // namespace ti
 
 #endif

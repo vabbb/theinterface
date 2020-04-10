@@ -5,7 +5,7 @@
 
 struct ti_keyboard {
   struct wl_list link;
-  ti_server *server;
+  ti::server *server;
   struct wlr_input_device *device;
 
   struct wl_listener modifiers;
