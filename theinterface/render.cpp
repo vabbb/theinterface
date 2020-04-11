@@ -1,6 +1,7 @@
 #include <cmath>
 
 extern "C" {
+#include <wlr/util/log.h>
 #define static
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_matrix.h>
@@ -11,8 +12,14 @@ extern "C" {
 #include "server.hpp"
 #include "xdg_shell.hpp"
 
+/** This function is called for every surface that needs to be rendered. */
 void render_surface(struct wlr_surface *surface, int sx, int sy, void *data) {
-  /* This function is called for every surface that needs to be rendered. */
+  wlr_log(WLR_DEBUG, "sfce = %p, sx = %d, sy = %d", surface, sx, sy);
+  
+  // if the surface is not ready yet, we don't render it
+  if (!surface) {
+    return;
+  }
   struct render_data *rdata = (struct render_data *)data;
   ti::view *view = rdata->view;
   struct wlr_output *output = rdata->output;

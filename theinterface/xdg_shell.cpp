@@ -7,11 +7,11 @@ extern "C" {
 
 #include "xdg_shell.hpp"
 
+/** This function sets up an interactive move or resize operation, where the
+ * compositor stops propegating pointer events to clients and instead
+ * consumes them itself, to move or resize windows. */
 static void begin_interactive(ti::xdg_view *view, ti::cursor_mode mode,
                               uint32_t edges) {
-  /* This function sets up an interactive move or resize operation, where the
-   * compositor stops propegating pointer events to clients and instead
-   * consumes them itself, to move or resize windows. */
   ti::server *server = view->server;
   struct wlr_surface *focused_surface =
       server->seat->pointer_state.focused_surface;
@@ -35,45 +35,46 @@ static void begin_interactive(ti::xdg_view *view, ti::cursor_mode mode,
   server->resize_edges = edges;
 }
 
-static void xdg_surface_map(struct wl_listener *listener, void *data) {
-  /* Called when the surface is mapped, or ready to display on-screen. */
+/** Called when the surface is mapped, or ready to display on-screen. */
+static void handle_xdg_surface_map(struct wl_listener *listener, void *data) {
   ti::xdg_view *view = wl_container_of(listener, view, map);
   view->mapped = true;
   focus_view(view, view->xdg_surface->surface);
 }
 
-static void xdg_surface_unmap(struct wl_listener *listener, void *data) {
-  /* Called when the surface is unmapped, and should no longer be shown. */
+/** Called when the surface is unmapped, and should no longer be shown. */
+static void handle_xdg_surface_unmap(struct wl_listener *listener, void *data) {
   ti::view *view = wl_container_of(listener, view, unmap);
   view->mapped = false;
 }
 
-static void xdg_surface_destroy(struct wl_listener *listener, void *data) {
-  /* Called when the surface is destroyed and should never be shown again. */
+/* Called when the surface is destroyed and should never be shown again. */
+static void handle_xdg_surface_destroy(struct wl_listener *listener,
+                                       void *data) {
   ti::view *view = wl_container_of(listener, view, destroy);
   wl_list_remove(&view->link);
 
   delete view;
 }
 
-static void xdg_toplevel_request_move(struct wl_listener *listener,
-                                      void *data) {
-  /* This event is raised when a client would like to begin an interactive
-   * move, typically because the user clicked on their client-side
-   * decorations. Note that a more sophisticated compositor should check the
-   * provied serial against a list of button press serials sent to this
-   * client, to prevent the client from requesting this whenever they want. */
+/** This event is raised when a client would like to begin an interactive
+ * move, typically because the user clicked on their client-side
+ * decorations. Note that a more sophisticated compositor should check the
+ * provied serial against a list of button press serials sent to this
+ * client, to prevent the client from requesting this whenever they want. */
+static void handle_xdg_toplevel_request_move(struct wl_listener *listener,
+                                             void *data) {
   ti::xdg_view *view = wl_container_of(listener, view, request_move);
   begin_interactive(view, ti::CURSOR_MOVE, 0);
 }
 
-static void xdg_toplevel_request_resize(struct wl_listener *listener,
-                                        void *data) {
-  /* This event is raised when a client would like to begin an interactive
-   * resize, typically because the user clicked on their client-side
-   * decorations. Note that a more sophisticated compositor should check the
-   * provied serial against a list of button press serials sent to this
-   * client, to prevent the client from requesting this whenever they want. */
+/** This event is raised when a client would like to begin an interactive
+ * resize, typically because the user clicked on their client-side
+ * decorations. Note that a more sophisticated compositor should check the
+ * provied serial against a list of button press serials sent to this
+ * client, to prevent the client from requesting this whenever they want. */
+static void handle_xdg_toplevel_request_resize(struct wl_listener *listener,
+                                               void *data) {
   struct wlr_xdg_toplevel_resize_event *event =
       (struct wlr_xdg_toplevel_resize_event *)(data);
   ti::xdg_view *view = wl_container_of(listener, view, request_resize);
@@ -81,7 +82,6 @@ static void xdg_toplevel_request_resize(struct wl_listener *listener,
 }
 
 void focus_view(ti::xdg_view *view, struct wlr_surface *surface) {
-  /* Note: this function only deals with keyboard focus. */
   if (!view) {
     return;
   }
@@ -121,9 +121,7 @@ void focus_view(ti::xdg_view *view, struct wlr_surface *surface) {
                                  &keyboard->modifiers);
 }
 
-void server_new_xdg_surface(struct wl_listener *listener, void *data) {
-  /* This event is raised when wlr_xdg_shell receives a new xdg surface from a
-   * client, either a toplevel (application window) or popup. */
+void handle_new_xdg_surface(struct wl_listener *listener, void *data) {
   ti::server *server = wl_container_of(listener, server, new_xdg_surface);
   struct wlr_xdg_surface *xdg_surface =
       reinterpret_cast<struct wlr_xdg_surface *>(data);
@@ -144,18 +142,18 @@ void server_new_xdg_surface(struct wl_listener *listener, void *data) {
   wl_client_get_credentials(client, &view->pid, NULL, NULL);
 
   /* Listen to the various events it can emit */
-  view->map.notify = xdg_surface_map;
+  view->map.notify = handle_xdg_surface_map;
   wl_signal_add(&xdg_surface->events.map, &view->map);
-  view->unmap.notify = xdg_surface_unmap;
+  view->unmap.notify = handle_xdg_surface_unmap;
   wl_signal_add(&xdg_surface->events.unmap, &view->unmap);
-  view->destroy.notify = xdg_surface_destroy;
+  view->destroy.notify = handle_xdg_surface_destroy;
   wl_signal_add(&xdg_surface->events.destroy, &view->destroy);
 
   /* cotd */
   struct wlr_xdg_toplevel *toplevel = xdg_surface->toplevel;
-  view->request_move.notify = xdg_toplevel_request_move;
+  view->request_move.notify = handle_xdg_toplevel_request_move;
   wl_signal_add(&toplevel->events.request_move, &view->request_move);
-  view->request_resize.notify = xdg_toplevel_request_resize;
+  view->request_resize.notify = handle_xdg_toplevel_request_resize;
   wl_signal_add(&toplevel->events.request_resize, &view->request_resize);
 
   /* Add it to the list of views. */

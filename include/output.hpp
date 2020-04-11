@@ -12,6 +12,6 @@ struct output {
 };
 } // namespace ti
 
-void server_new_output(struct wl_listener *listener, void *data);
+void handle_new_output(struct wl_listener *listener, void *data);
 
 #endif

@@ -37,7 +37,7 @@ public:
   class server *server;
   struct wl_list link;     // ti::server::views
   struct wl_list children; // ti::view_child::link
-  struct wlr_surface *surface;
+  // struct wlr_surface *surface;
 
   struct wl_listener map;
   struct wl_listener unmap;

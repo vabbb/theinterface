@@ -43,7 +43,7 @@ ti::server::server() {
   /* Configure a listener to be notified when new outputs are available on the
    * backend. */
   wl_list_init(&outputs);
-  new_output.notify = server_new_output;
+  new_output.notify = handle_new_output;
   wl_signal_add(&backend->events.new_output, &new_output);
 
   /* Set up our list of views and the xdg-shell. The xdg-shell is a Wayland
@@ -54,7 +54,7 @@ ti::server::server() {
    */
   wl_list_init(&views);
   xdg_shell = wlr_xdg_shell_create(display);
-  new_xdg_surface.notify = server_new_xdg_surface;
+  new_xdg_surface.notify = handle_new_xdg_surface;
   wl_signal_add(&xdg_shell->events.new_surface, &new_xdg_surface);
 
   /*
@@ -135,7 +135,7 @@ ti::server::server() {
   wlr_log(WLR_INFO, "Running TheInterface on WAYLAND_DISPLAY=%s", socket);
 }
 
-/// automatically run when the program is about to exit
+/// automatically ran when the program is about to exit
 ti::server::~server() {
   wlr_log(WLR_INFO, "Deallocating server resources");
 #ifdef WLR_HAS_XWAYLAND

@@ -9,19 +9,19 @@ extern "C" {
 
 #ifdef WLR_HAS_XWAYLAND
 
-static void xwayland_surface_map(struct wl_listener *listener, void *data) {
+static void handle_xwayland_surface_map(struct wl_listener *listener, void *data) {
   ti::xwayland_view *view = wl_container_of(listener, view, map);
   view->mapped = true;
   /// TODO: FOCUS VIEW
 }
 
-static void xwayland_surface_unmap(struct wl_listener *listener, void *data) {
+static void handle_xwayland_surface_unmap(struct wl_listener *listener, void *data) {
   /* Called when the surface is unmapped, and should no longer be shown. */
   ti::xwayland_view *view = wl_container_of(listener, view, unmap);
   view->mapped = false;
 }
 
-static void xwayland_surface_destroy(struct wl_listener *listener, void *data) {
+static void handle_xwayland_surface_destroy(struct wl_listener *listener, void *data) {
   /* Called when the surface is destroyed and should never be shown again. */
   ti::xwayland_view *view = wl_container_of(listener, view, destroy);
   wl_list_remove(&view->link);
@@ -38,12 +38,15 @@ void handle_new_xwayland_surface(struct wl_listener *listener, void *data) {
   view->server = server;
   view->xwayland_surface = xwayland_surface;
 
+  view->pid = view->xwayland_surface->pid;
+  wlr_log(WLR_DEBUG, "SETTING XWAY PID = %d", view->pid);
+
   /* Listen to the various events it can emit */
-  view->map.notify = xwayland_surface_map;
+  view->map.notify = handle_xwayland_surface_map;
   wl_signal_add(&xwayland_surface->events.map, &view->map);
-  view->unmap.notify = xwayland_surface_unmap;
+  view->unmap.notify = handle_xwayland_surface_unmap;
   wl_signal_add(&xwayland_surface->events.unmap, &view->unmap);
-  view->destroy.notify = xwayland_surface_destroy;
+  view->destroy.notify = handle_xwayland_surface_destroy;
   wl_signal_add(&xwayland_surface->events.destroy, &view->destroy);
 
   /* cotd */

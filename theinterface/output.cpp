@@ -2,6 +2,7 @@
 #include <ctime>
 
 extern "C" {
+#include <wlr/util/log.h>
 #define static
 #include <wlr/render/wlr_renderer.h>
 #undef static
@@ -49,13 +50,19 @@ static void output_frame(struct wl_listener *listener, void *data) {
         .view = view,
         .when = &now,
     };
-    if (view->type == ti::view_type::XDG_SHELL_VIEW) {
+    switch (view->type) {
+    case ti::view_type::XDG_SHELL_VIEW: {
       /* This calls our render_surface function for each surface among the
        * xdg_surface's toplevel and popups. */
       wlr_xdg_surface_for_each_surface(view->xdg_surface, render_surface,
                                        &rdata);
-    } else if (view->type == ti::view_type::XWAYLAND_VIEW) {
-      
+      break;
+    }
+    case ti::view_type::XWAYLAND_VIEW: {
+      // rendering the surface directly
+      render_surface(view->xwayland_surface->surface, 0, 0, &rdata);
+      break;
+    }
     }
   }
 
@@ -73,7 +80,7 @@ static void output_frame(struct wl_listener *listener, void *data) {
   wlr_output_commit(output->wlr_output);
 }
 
-void server_new_output(struct wl_listener *listener, void *data) {
+void handle_new_output(struct wl_listener *listener, void *data) {
   /* This event is rasied by the backend when a new output (aka a display or
    * monitor) becomes available. */
   ti::server *server = wl_container_of(listener, server, new_output);

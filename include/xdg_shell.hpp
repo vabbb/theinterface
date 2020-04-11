@@ -16,7 +16,11 @@ public:
 };
 } // namespace ti
 
+/** Note: this function only deals with keyboard focus. */
 void focus_view(ti::xdg_view *view, struct wlr_surface *surface);
-void server_new_xdg_surface(struct wl_listener *listener, void *data);
+
+/** This event is raised when wlr_xdg_shell receives a new xdg surface from a
+ * client, either a toplevel (application window) or popup. */
+void handle_new_xdg_surface(struct wl_listener *listener, void *data);
 
 #endif
