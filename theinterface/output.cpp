@@ -16,7 +16,7 @@ extern "C" {
 static void output_frame(struct wl_listener *listener, void *data) {
   /* This function is called every time an output is ready to display a frame,
    * generally at the output's refresh rate (e.g. 60Hz). */
-  struct ti_output *output = wl_container_of(listener, output, frame);
+  ti::output *output = wl_container_of(listener, output, frame);
   struct wlr_renderer *renderer = output->server->renderer;
 
   struct timespec now;
@@ -37,7 +37,7 @@ static void output_frame(struct wl_listener *listener, void *data) {
 
   /* Each subsequent window we render is rendered on top of the last. Because
    * our view list is ordered front-to-back, we iterate over it backwards. */
-  ti::xdg_view *view;
+  ti::view *view;
   wl_list_for_each_reverse(view, &output->server->views, link) {
     if (!view->mapped) {
       /* An unmapped view should not be rendered. */
@@ -49,9 +49,14 @@ static void output_frame(struct wl_listener *listener, void *data) {
         .view = view,
         .when = &now,
     };
-    /* This calls our render_surface function for each surface among the
-     * xdg_surface's toplevel and popups. */
-    wlr_xdg_surface_for_each_surface(view->xdg_surface, render_surface, &rdata);
+    if (view->type == ti::view_type::XDG_SHELL_VIEW) {
+      /* This calls our render_surface function for each surface among the
+       * xdg_surface's toplevel and popups. */
+      wlr_xdg_surface_for_each_surface(view->xdg_surface, render_surface,
+                                       &rdata);
+    } else if (view->type == ti::view_type::XWAYLAND_VIEW) {
+      
+    }
   }
 
   /* Hardware cursors are rendered by the GPU on a separate plane, and can be
@@ -72,7 +77,7 @@ void server_new_output(struct wl_listener *listener, void *data) {
   /* This event is rasied by the backend when a new output (aka a display or
    * monitor) becomes available. */
   ti::server *server = wl_container_of(listener, server, new_output);
-  struct wlr_output *wlr_output = static_cast<struct wlr_output *>(data);
+  struct wlr_output *wlr_output = reinterpret_cast<struct wlr_output *>(data);
 
   /* Some backends don't have modes. DRM+KMS does, and we need to set a mode
    * before we can use the output. The mode is a tuple of (width, height,
@@ -98,8 +103,7 @@ void server_new_output(struct wl_listener *listener, void *data) {
   }
 
   /* Allocates and configures our state for this output */
-  struct ti_output *output =
-      (struct ti_output *)calloc(1, sizeof(struct ti_output));
+  ti::output *output = new ti::output;
   output->wlr_output = wlr_output;
   output->server = server;
   /* Sets up a listener for the frame notify event. */

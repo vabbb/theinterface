@@ -2,6 +2,7 @@
 
 extern "C" {
 #include <wlr/types/wlr_xcursor_manager.h>
+#include <wlr/util/log.h>
 }
 
 #include "keyboard.hpp"
@@ -24,7 +25,7 @@ void server_new_input(struct wl_listener *listener, void *data) {
    * available. */
   ti::server *server = wl_container_of(listener, server, new_input);
   struct wlr_input_device *device =
-      static_cast<struct wlr_input_device *>(data);
+      reinterpret_cast<struct wlr_input_device *>(data);
 
   switch (device->type) {
   case WLR_INPUT_DEVICE_KEYBOARD:
@@ -48,8 +49,8 @@ void server_new_input(struct wl_listener *listener, void *data) {
 
 static void process_cursor_move(ti::server *server, uint32_t time) {
   /* Move the grabbed view to the new position. */
-  server->grabbed_xdg_view->x = server->cursor->x - server->grab_x;
-  server->grabbed_xdg_view->y = server->cursor->y - server->grab_y;
+  server->grabbed_view->x = server->cursor->x - server->grab_x;
+  server->grabbed_view->y = server->cursor->y - server->grab_y;
 }
 
 static void process_cursor_resize(ti::server *server, uint32_t time) {
@@ -63,7 +64,7 @@ static void process_cursor_resize(ti::server *server, uint32_t time) {
    * you'd wait for the client to prepare a buffer at the new size, then
    * commit any movement that was prepared.
    */
-  ti::xdg_view *view = server->grabbed_xdg_view;
+  ti::view *view = server->grabbed_view;
   double dx = server->cursor->x - server->grab_x;
   double dy = server->cursor->y - server->grab_y;
   double x = view->x;
@@ -95,10 +96,10 @@ static void process_cursor_resize(ti::server *server, uint32_t time) {
 
 static void process_cursor_motion(ti::server *server, uint32_t time) {
   /* If the mode is non-passthrough, delegate to those functions. */
-  if (server->cursor_mode == TI_CURSOR_MOVE) {
+  if (server->cursor_mode == ti::CURSOR_MOVE) {
     process_cursor_move(server, time);
     return;
-  } else if (server->cursor_mode == TI_CURSOR_RESIZE) {
+  } else if (server->cursor_mode == ti::CURSOR_RESIZE) {
     process_cursor_resize(server, time);
     return;
   }
@@ -182,14 +183,19 @@ void server_cursor_button(struct wl_listener *listener, void *data) {
   double sx, sy;
   struct wlr_seat *seat = server->seat;
   struct wlr_surface *surface = NULL;
-  ti::xdg_view *view = desktop_view_at(server, server->cursor->x,
-                                       server->cursor->y, &surface, &sx, &sy);
+  ti::view *view = desktop_view_at(server, server->cursor->x, server->cursor->y,
+                                   &surface, &sx, &sy);
   if (event->state == WLR_BUTTON_RELEASED) {
     /* If you released any buttons, we exit interactive move/resize mode. */
-    server->cursor_mode = TI_CURSOR_PASSTHROUGH;
+    server->cursor_mode = ti::CURSOR_PASSTHROUGH;
   } else {
-    /* Focus that client if the button was _pressed_ */
-    focus_view(view, surface);
+    if (!view) {
+      focus_view(nullptr, surface);
+    } else if (view->type == ti::view_type::XDG_SHELL_VIEW) {
+      /* Focus that client if the button was _pressed_ */
+      ti::xdg_view *v = reinterpret_cast<ti::xdg_view *>(view);
+      focus_view(v, surface);
+    }
   }
 }
 

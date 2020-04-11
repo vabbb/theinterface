@@ -9,25 +9,30 @@ extern "C" {
 #include <wlr/config.h>
 #include <wlr/types/wlr_surface.h>
 #include <wlr/types/wlr_xdg_shell.h>
-#if WLR_HAS_WAYLAND
+}
+
+extern "C" {
+#define static
+#define class c_class
 #include <wlr/xwayland.h>
-#endif
+#undef class
+#undef static
 }
 
 namespace ti {
 enum view_type {
-  TI_XDG_SHELL_VIEW,
-#if WLR_HAS_WAYLAND
-  TI_XWAYLAND_VIEW,
+  XDG_SHELL_VIEW,
+#ifdef WLR_HAS_XWAYLAND
+  XWAYLAND_VIEW,
 #endif
 };
 
+/// view interface
 class view {
 public:
   int x, y;
   pid_t pid;
   bool mapped;
-  enum view_type type;
 
   class server *server;
   struct wl_list link;     // ti::server::views
@@ -41,21 +46,15 @@ public:
   struct wl_listener request_resize;
   struct wl_listener new_subsurface;
 
-  view();
-  // virtual ~view() = 0;
-  // virtual std::string getTitle() = 0;
-  // virtual void getGeometry(int *width_out, int *height_out) = 0;
-  // virtual bool isPrimary() = 0;
-  // virtual bool isTransient_for(view *child, view *parent) = 0;
-  // virtual void activate(bool activate) = 0;
-  // virtual void maximize(int output_width, int output_height) = 0;
-  // virtual void forEachSurface(wlr_surface_iterator_func_t iterator,
-  //                             void *data) = 0;
-  // virtual void forEachPopup(wlr_surface_iterator_func_t iterator,
-  //                           void *data) = 0;
-  // virtual struct wlr_surface *wlr_surface_at(double sx, double sy,
-  //                                            double *sub_x, double *sub_y) =
-  //                                            0;
+  const enum view_type type;
+  union {
+    struct wlr_xwayland_surface *xwayland_surface;
+    struct wlr_xdg_surface *xdg_surface;
+  };
+
+  view(enum view_type t);
+  virtual ~view() = 0;
+  virtual std::string get_title() = 0;
 };
 } // namespace ti
 

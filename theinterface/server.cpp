@@ -9,7 +9,7 @@ extern "C" {
 #include "xdg_shell.hpp"
 #include "xwayland.hpp"
 
-ti::server ::server() {
+ti::server::server() {
   /* The Wayland display is managed by libwayland. It handles accepting
    * clients from the Unix socket, manging Wayland globals, and so on. */
   display = wl_display_create();
@@ -124,6 +124,8 @@ ti::server ::server() {
 
 #ifdef WLR_HAS_XWAYLAND
   xwayland = wlr_xwayland_create(display, compositor, false);
+  new_xwayland_surface.notify = handle_new_xwayland_surface;
+  wl_signal_add(&xwayland->events.new_surface, &new_xwayland_surface);
   setenv("DISPLAY", xwayland->display_name, true);
 #endif
 
@@ -134,7 +136,7 @@ ti::server ::server() {
 }
 
 /// automatically run when the program is about to exit
-ti::server ::~server() {
+ti::server::~server() {
   wlr_log(WLR_INFO, "Deallocating server resources");
 #ifdef WLR_HAS_XWAYLAND
   wlr_xwayland_destroy(xwayland);

@@ -7,7 +7,7 @@ extern "C" {
 
 #include "xdg_shell.hpp"
 
-static void begin_interactive(ti::xdg_view *view, enum ti_cursor_mode mode,
+static void begin_interactive(ti::xdg_view *view, ti::cursor_mode mode,
                               uint32_t edges) {
   /* This function sets up an interactive move or resize operation, where the
    * compositor stops propegating pointer events to clients and instead
@@ -19,11 +19,11 @@ static void begin_interactive(ti::xdg_view *view, enum ti_cursor_mode mode,
     /* Deny move/resize requests from unfocused clients. */
     return;
   }
-  server->grabbed_xdg_view = view;
+  server->grabbed_view = view;
   server->cursor_mode = mode;
   struct wlr_box geo_box;
   wlr_xdg_surface_get_geometry(view->xdg_surface, &geo_box);
-  if (mode == TI_CURSOR_MOVE) {
+  if (mode == ti::CURSOR_MOVE) {
     server->grab_x = server->cursor->x - view->x;
     server->grab_y = server->cursor->y - view->y;
   } else {
@@ -64,7 +64,7 @@ static void xdg_toplevel_request_move(struct wl_listener *listener,
    * provied serial against a list of button press serials sent to this
    * client, to prevent the client from requesting this whenever they want. */
   ti::xdg_view *view = wl_container_of(listener, view, request_move);
-  begin_interactive(view, TI_CURSOR_MOVE, 0);
+  begin_interactive(view, ti::CURSOR_MOVE, 0);
 }
 
 static void xdg_toplevel_request_resize(struct wl_listener *listener,
@@ -77,12 +77,15 @@ static void xdg_toplevel_request_resize(struct wl_listener *listener,
   struct wlr_xdg_toplevel_resize_event *event =
       (struct wlr_xdg_toplevel_resize_event *)(data);
   ti::xdg_view *view = wl_container_of(listener, view, request_resize);
-  begin_interactive(view, TI_CURSOR_RESIZE, event->edges);
+  begin_interactive(view, ti::CURSOR_RESIZE, event->edges);
 }
 
 void focus_view(ti::xdg_view *view, struct wlr_surface *surface) {
   /* Note: this function only deals with keyboard focus. */
-  if (view == NULL) {
+  if (!view) {
+    return;
+  }
+  if (view->type == ti::view_type::XWAYLAND_VIEW) {
     return;
   }
   ti::server *server = view->server;
@@ -123,7 +126,7 @@ void server_new_xdg_surface(struct wl_listener *listener, void *data) {
    * client, either a toplevel (application window) or popup. */
   ti::server *server = wl_container_of(listener, server, new_xdg_surface);
   struct wlr_xdg_surface *xdg_surface =
-      static_cast<struct wlr_xdg_surface *>(data);
+      reinterpret_cast<struct wlr_xdg_surface *>(data);
   if (xdg_surface->role != WLR_XDG_SURFACE_ROLE_TOPLEVEL) {
     return;
   }
@@ -156,7 +159,13 @@ void server_new_xdg_surface(struct wl_listener *listener, void *data) {
   wl_signal_add(&toplevel->events.request_resize, &view->request_resize);
 
   /* Add it to the list of views. */
-  wl_list_insert(&server->views, &view->link);
+  ti::view *v = reinterpret_cast<ti::view *>(view);
+  wl_list_insert(&server->views, &v->link);
 }
 
-ti::xdg_view ::xdg_view() {}
+std::string ti::xdg_view::get_title() {
+  return this->xdg_surface->toplevel->title;
+}
+
+ti::xdg_view::xdg_view() : view(ti::view_type::XDG_SHELL_VIEW) {}
+ti::xdg_view::~xdg_view() {}

@@ -3,7 +3,8 @@
 
 #include "server.hpp"
 
-struct ti_keyboard {
+namespace ti {
+struct keyboard {
   struct wl_list link;
   ti::server *server;
   struct wlr_input_device *device;
@@ -11,5 +12,6 @@ struct ti_keyboard {
   struct wl_listener modifiers;
   struct wl_listener key;
 };
+}
 
 #endif

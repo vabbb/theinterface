@@ -24,8 +24,8 @@ void seat_request_cursor(struct wl_listener *listener, void *data) {
   }
 }
 
-bool view_at(ti::xdg_view *view, double lx, double ly,
-             struct wlr_surface **surface, double *sx, double *sy) {
+bool view_at(ti::view *view, double lx, double ly, struct wlr_surface **surface,
+             double *sx, double *sy) {
   /*
    * XDG toplevels may have nested surfaces, such as popup windows for context
    * menus or tooltips. This function tests if any of those are underneath the
@@ -40,8 +40,12 @@ bool view_at(ti::xdg_view *view, double lx, double ly,
 
   double _sx, _sy;
   struct wlr_surface *_surface = NULL;
-  _surface = wlr_xdg_surface_surface_at(view->xdg_surface, view_sx, view_sy,
-                                        &_sx, &_sy);
+
+  if (view->type == ti::view_type::XDG_SHELL_VIEW) {
+    ti::xdg_view *v = reinterpret_cast<ti::xdg_view *>(view);
+    _surface = wlr_xdg_surface_surface_at(view->xdg_surface, view_sx, view_sy,
+                                          &_sx, &_sy);
+  }
 
   if (_surface != NULL) {
     *sx = _sx;
@@ -49,16 +53,15 @@ bool view_at(ti::xdg_view *view, double lx, double ly,
     *surface = _surface;
     return true;
   }
-
   return false;
 }
 
-ti::xdg_view *desktop_view_at(ti::server *server, double lx, double ly,
-                              struct wlr_surface **surface, double *sx,
-                              double *sy) {
+ti::view *desktop_view_at(ti::server *server, double lx, double ly,
+                          struct wlr_surface **surface, double *sx,
+                          double *sy) {
   /* This iterates over all of our surfaces and attempts to find one under the
    * cursor. This relies on server->views being ordered from top-to-bottom. */
-  ti::xdg_view *view;
+  ti::view *view;
   wl_list_for_each(view, &server->views, link) {
     if (view_at(view, lx, ly, surface, sx, sy)) {
       return view;

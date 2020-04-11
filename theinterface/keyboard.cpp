@@ -16,7 +16,7 @@ static void keyboard_handle_modifiers(struct wl_listener *listener,
                                       void *data) {
   /* This event is raised when a modifier key, such as shift or alt, is
    * pressed. We simply communicate this to the client. */
-  struct ti_keyboard *keyboard = wl_container_of(listener, keyboard, modifiers);
+  ti::keyboard *keyboard = wl_container_of(listener, keyboard, modifiers);
   /*
    * A seat can only have one keyboard, but this is a limitation of the
    * Wayland protocol - not wlroots. We assign all connected keyboards to the
@@ -126,10 +126,10 @@ static bool handle_keybinding(ti::server *server, const xkb_keysym_t *syms,
 
 static void keyboard_handle_key(struct wl_listener *listener, void *data) {
   /* This event is raised when a key is pressed or released. */
-  struct ti_keyboard *keyboard = wl_container_of(listener, keyboard, key);
+  ti::keyboard *keyboard = wl_container_of(listener, keyboard, key);
   ti::server *server = keyboard->server;
   struct wlr_event_keyboard_key *event =
-      static_cast<struct wlr_event_keyboard_key *>(data);
+      reinterpret_cast<struct wlr_event_keyboard_key *>(data);
   struct wlr_seat *seat = server->seat;
 
   /* Translate libinput keycode -> xkbcommon */
@@ -156,8 +156,7 @@ static void keyboard_handle_key(struct wl_listener *listener, void *data) {
 }
 
 void ti::server::new_keyboard(struct wlr_input_device *device) {
-  struct ti_keyboard *keyboard =
-      (struct ti_keyboard *)calloc(1, sizeof(struct ti_keyboard));
+  ti::keyboard *keyboard = new ti::keyboard;
   keyboard->server = this;
   keyboard->device = device;
 

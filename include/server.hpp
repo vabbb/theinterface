@@ -13,6 +13,7 @@ extern "C" {
 #endif
 
 #include "cursor.hpp"
+#include "view.hpp"
 
 namespace ti {
 class server {
@@ -42,9 +43,9 @@ public:
   struct wl_listener new_input;
   struct wl_listener request_cursor;
   struct wl_list keyboards;
-  enum ti_cursor_mode cursor_mode;
+  enum ti::cursor_mode cursor_mode;
 
-  struct xdg_view *grabbed_xdg_view;
+  class view *grabbed_view;
   double grab_x, grab_y;
   int grab_width, grab_height;
   uint32_t resize_edges;

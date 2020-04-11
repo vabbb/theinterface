@@ -6,13 +6,13 @@
 #include "view.hpp"
 
 namespace ti {
-
-// xdg_view is an implementation of the view interface
 class xdg_view : public view {
 public:
-  struct wlr_xdg_surface *xdg_surface;
-
+  std::string get_title() override;
   xdg_view();
+  ~xdg_view();
+  // wlr_xdg_surface* get_impl_surface<wlr_xdg_surface *>() override;
+  // void* set_impl_surface();
 };
 } // namespace ti
 
