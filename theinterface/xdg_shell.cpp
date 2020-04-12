@@ -39,7 +39,7 @@ static void begin_interactive(ti::xdg_view *view, ti::cursor_mode mode,
 static void handle_xdg_surface_map(struct wl_listener *listener, void *data) {
   ti::xdg_view *view = wl_container_of(listener, view, map);
   view->mapped = true;
-  focus_view(view, view->xdg_surface->surface);
+  view->focus(view->xdg_surface->surface);
 }
 
 /** Called when the surface is unmapped, and should no longer be shown. */
@@ -81,50 +81,10 @@ static void handle_xdg_toplevel_request_resize(struct wl_listener *listener,
   begin_interactive(view, ti::CURSOR_RESIZE, event->edges);
 }
 
-void focus_view(ti::xdg_view *view, struct wlr_surface *surface) {
-  if (!view) {
-    return;
-  }
-  if (view->type == ti::view_type::XWAYLAND_VIEW) {
-    return;
-  }
-  ti::server *server = view->server;
-  struct wlr_seat *seat = server->seat;
-  struct wlr_surface *prev_surface = seat->keyboard_state.focused_surface;
-  if (prev_surface == surface) {
-    /* Don't re-focus an already focused surface. */
-    return;
-  }
-  if (prev_surface) {
-    /*
-     * Deactivate the previously focused surface. This lets the client know
-     * it no longer has focus and the client will repaint accordingly, e.g.
-     * stop displaying a caret.
-     */
-    struct wlr_xdg_surface *previous =
-        wlr_xdg_surface_from_wlr_surface(seat->keyboard_state.focused_surface);
-    wlr_xdg_toplevel_set_activated(previous, false);
-  }
-  struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(seat);
-  /* Move the view to the front */
-  wl_list_remove(&view->link);
-  wl_list_insert(&server->views, &view->link);
-  /* Activate the new surface */
-  wlr_xdg_toplevel_set_activated(view->xdg_surface, true);
-  /*
-   * Tell the seat to have the keyboard enter this surface. wlroots will keep
-   * track of this and automatically send key events to the appropriate
-   * clients without additional work on your part.
-   */
-  wlr_seat_keyboard_notify_enter(seat, view->xdg_surface->surface,
-                                 keyboard->keycodes, keyboard->num_keycodes,
-                                 &keyboard->modifiers);
-}
-
 void handle_new_xdg_surface(struct wl_listener *listener, void *data) {
   ti::server *server = wl_container_of(listener, server, new_xdg_surface);
   struct wlr_xdg_surface *xdg_surface =
-      reinterpret_cast<struct wlr_xdg_surface *>(data);
+ reinterpret_cast<struct wlr_xdg_surface *>(data);
   if (xdg_surface->role != WLR_XDG_SURFACE_ROLE_TOPLEVEL) {
     return;
   }
@@ -157,7 +117,7 @@ void handle_new_xdg_surface(struct wl_listener *listener, void *data) {
   wl_signal_add(&toplevel->events.request_resize, &view->request_resize);
 
   /* Add it to the list of views. */
-  ti::view *v = reinterpret_cast<ti::view *>(view);
+  ti::view *v =  dynamic_cast<ti::view *>(view);
   wl_list_insert(&server->views, &v->link);
 }
 
@@ -165,5 +125,5 @@ std::string ti::xdg_view::get_title() {
   return this->xdg_surface->toplevel->title;
 }
 
-ti::xdg_view::xdg_view() : view(ti::view_type::XDG_SHELL_VIEW) {}
+ti::xdg_view::xdg_view() : view(ti::XDG_SHELL_VIEW) {}
 ti::xdg_view::~xdg_view() {}

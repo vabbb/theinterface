@@ -23,13 +23,10 @@ ti::server *server;
 static void ti_atexit() { delete server; }
 
 int main(int argc, char *argv[]) {
-  /// using the debug env var slows the compositor down significantly
-  const bool DEBUG = getenv("DEBUG");
-  if (DEBUG) {
-    wlr_log_init(WLR_DEBUG, NULL);
-  } else {
-    wlr_log_init(WLR_INFO, NULL);
-  }
+  /// using WLR_DEBUG slows the compositor down significantly, so the user needs
+  /// to set the TI_DEBUG env var explicitly to have the debug log
+  const bool TI_DEBUG = getenv("TI_DEBUG");
+  wlr_log_init(TI_DEBUG ? WLR_DEBUG : WLR_INFO, NULL);
 
   char *startup_cmd = NULL;
 
@@ -49,9 +46,8 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  /* if vmwgfx driver is detected, dont use hardware cursors
-   * unless the user asks for it explicitly by exporting
-   * WLR_NO_HARDWARE_CURSORS=0 */
+  // if vmwgfx driver is detected, don't use hardware cursors unless the user
+  // asks for it explicitly by exporting WLR_NO_HARDWARE_CURSORS=0
   if (getenv("WLR_NO_HARDWARE_CURSORS") == nullptr) {
     if (possible_no_hardware_cursor_support()) {
       setenv("WLR_NO_HARDWARE_CURSORS", "1", true);

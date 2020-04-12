@@ -17,7 +17,7 @@ public:
 } // namespace ti
 
 /** Note: this function only deals with keyboard focus. */
-void focus_view(ti::xdg_view *view, struct wlr_surface *surface);
+// void focus_view(ti::xdg_view *view, struct wlr_surface *surface);
 
 /** This event is raised when wlr_xdg_shell receives a new xdg surface from a
  * client, either a toplevel (application window) or popup. */

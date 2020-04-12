@@ -21,11 +21,14 @@ public:
   struct wl_listener commit;
 
   std::string get_title() override;
+  struct wlr_surface *get_wlr_surface();
+
   xwayland_view();
   ~xwayland_view();
 };
 } // namespace ti
 
+/** This event is raised when wlr_xwayland receives a new xwayland surface */
 void handle_new_xwayland_surface(struct wl_listener *listener, void *data);
 
 #endif

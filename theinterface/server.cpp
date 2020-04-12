@@ -127,6 +127,18 @@ ti::server::server() {
   new_xwayland_surface.notify = handle_new_xwayland_surface;
   wl_signal_add(&xwayland->events.new_surface, &new_xwayland_surface);
   setenv("DISPLAY", xwayland->display_name, true);
+
+  xwayland_xcursor_manager = wlr_xcursor_manager_create(nullptr, 24);
+  wlr_xcursor_manager_load(xwayland_xcursor_manager, 1);
+  xcursor =
+      wlr_xcursor_manager_get_xcursor(xwayland_xcursor_manager, "left_ptr", 1);
+  if (xcursor != NULL) {
+    struct wlr_xcursor_image *image = xcursor->images[0];
+    wlr_xwayland_set_cursor(xwayland, image->buffer, image->width * 4,
+                            image->width, image->height, image->hotspot_x,
+                            image->hotspot_y);
+  }
+  wlr_xwayland_set_seat(xwayland, seat);
 #endif
 
   /* Set the WAYLAND_DISPLAY environment variable to our socket and run the

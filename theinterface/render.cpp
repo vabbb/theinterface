@@ -12,14 +12,10 @@ extern "C" {
 #include "server.hpp"
 #include "xdg_shell.hpp"
 
-/** This function is called for every surface that needs to be rendered. */
+/** This function is called for every surface that needs to be rendered.
+ * Assumes surface is not NULL
+ */
 void render_surface(struct wlr_surface *surface, int sx, int sy, void *data) {
-  wlr_log(WLR_DEBUG, "sfce = %p, sx = %d, sy = %d", surface, sx, sy);
-  
-  // if the surface is not ready yet, we don't render it
-  if (!surface) {
-    return;
-  }
   struct render_data *rdata = (struct render_data *)data;
   ti::view *view = rdata->view;
   struct wlr_output *output = rdata->output;

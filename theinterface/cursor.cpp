@@ -25,7 +25,7 @@ void server_new_input(struct wl_listener *listener, void *data) {
    * available. */
   ti::server *server = wl_container_of(listener, server, new_input);
   struct wlr_input_device *device =
-      reinterpret_cast<struct wlr_input_device *>(data);
+   reinterpret_cast<struct wlr_input_device *>(data);
 
   switch (device->type) {
   case WLR_INPUT_DEVICE_KEYBOARD:
@@ -176,7 +176,7 @@ void server_cursor_button(struct wl_listener *listener, void *data) {
    * event. */
   ti::server *server = wl_container_of(listener, server, cursor_button);
   struct wlr_event_pointer_button *event =
-      static_cast<struct wlr_event_pointer_button *>(data);
+   reinterpret_cast<struct wlr_event_pointer_button *>(data);
   /* Notify the client with pointer focus that a button press has occurred */
   wlr_seat_pointer_notify_button(server->seat, event->time_msec, event->button,
                                  event->state);
@@ -190,11 +190,12 @@ void server_cursor_button(struct wl_listener *listener, void *data) {
     server->cursor_mode = ti::CURSOR_PASSTHROUGH;
   } else {
     if (!view) {
-      focus_view(nullptr, surface);
-    } else if (view->type == ti::view_type::XDG_SHELL_VIEW) {
+      // unfocus();
+      return;
+    } else if (view->type == ti::XDG_SHELL_VIEW) {
       /* Focus that client if the button was _pressed_ */
-      ti::xdg_view *v = reinterpret_cast<ti::xdg_view *>(view);
-      focus_view(v, surface);
+      ti::xdg_view *v =  dynamic_cast<ti::xdg_view *>(view);
+      v->focus(surface);
     }
   }
 }

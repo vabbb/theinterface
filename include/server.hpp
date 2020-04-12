@@ -28,6 +28,8 @@ public:
 #ifdef WLR_HAS_XWAYLAND
   struct wlr_xwayland *xwayland;
   struct wl_listener new_xwayland_surface;
+  struct wlr_xcursor *xcursor;
+  struct wlr_xcursor_manager *xwayland_xcursor_manager;
 #endif
   struct wl_list views;
 

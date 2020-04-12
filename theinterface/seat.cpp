@@ -7,7 +7,6 @@
 
 void seat_request_cursor(struct wl_listener *listener, void *data) {
   ti::server *server = wl_container_of(listener, server, request_cursor);
-  /* This event is rasied by the seat when a client provides a cursor image */
   struct wlr_seat_pointer_request_set_cursor_event *event =
       (struct wlr_seat_pointer_request_set_cursor_event *)data;
   struct wlr_seat_client *focused_client =
@@ -26,13 +25,6 @@ void seat_request_cursor(struct wl_listener *listener, void *data) {
 
 bool view_at(ti::view *view, double lx, double ly, struct wlr_surface **surface,
              double *sx, double *sy) {
-  /*
-   * XDG toplevels may have nested surfaces, such as popup windows for context
-   * menus or tooltips. This function tests if any of those are underneath the
-   * coordinates lx and ly (in output Layout Coordinates). If so, it sets the
-   * surface pointer to that wlr_surface and the sx and sy coordinates to the
-   * coordinates relative to that surface's top-left corner.
-   */
   double view_sx = lx - view->x;
   double view_sy = ly - view->y;
 
@@ -41,10 +33,22 @@ bool view_at(ti::view *view, double lx, double ly, struct wlr_surface **surface,
   double _sx, _sy;
   struct wlr_surface *_surface = NULL;
 
-  if (view->type == ti::view_type::XDG_SHELL_VIEW) {
-    ti::xdg_view *v = reinterpret_cast<ti::xdg_view *>(view);
-    _surface = wlr_xdg_surface_surface_at(view->xdg_surface, view_sx, view_sy,
+  switch (view->type) {
+  case ti::XDG_SHELL_VIEW: {
+    ti::xdg_view *v =  dynamic_cast<ti::xdg_view *>(view);
+    _surface = wlr_xdg_surface_surface_at(v->xdg_surface, view_sx, view_sy,
                                           &_sx, &_sy);
+    break;
+  }
+  case ti::XWAYLAND_VIEW: {
+    ti::xwayland_view *v =  dynamic_cast<ti::xwayland_view *>(view);
+    _surface = wlr_surface_surface_at(v->get_wlr_surface(), view_sx, view_sy,
+                                      &_sx, &_sy);
+    break;
+  }
+  default: {
+    break;
+  }
   }
 
   if (_surface != NULL) {
@@ -59,8 +63,6 @@ bool view_at(ti::view *view, double lx, double ly, struct wlr_surface **surface,
 ti::view *desktop_view_at(ti::server *server, double lx, double ly,
                           struct wlr_surface **surface, double *sx,
                           double *sy) {
-  /* This iterates over all of our surfaces and attempts to find one under the
-   * cursor. This relies on server->views being ordered from top-to-bottom. */
   ti::view *view;
   wl_list_for_each(view, &server->views, link) {
     if (view_at(view, lx, ly, surface, sx, sy)) {

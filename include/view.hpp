@@ -2,6 +2,7 @@
 #define TI_VIEW_HPP
 
 #include <string>
+#include <variant>
 
 extern "C" {
 #include <wayland-util.h>
@@ -55,6 +56,7 @@ public:
   view(enum view_type t);
   virtual ~view() = 0;
   virtual std::string get_title() = 0;
+  void focus(struct wlr_surface *surface);
 };
 } // namespace ti
 

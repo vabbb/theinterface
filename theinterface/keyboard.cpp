@@ -53,7 +53,7 @@ static bool ti_alt_tab(ti::server *server, uint32_t keysym) {
       wl_container_of(server->views.next, current_view, link);
   ti::xdg_view *next_view =
       wl_container_of(current_view->link.next, next_view, link);
-  focus_view(next_view, next_view->xdg_surface->surface);
+  next_view->focus(next_view->xdg_surface->surface);
   /* Move the previous view to the end of the list */
   wl_list_remove(&current_view->link);
   wl_list_insert(server->views.prev, &current_view->link);

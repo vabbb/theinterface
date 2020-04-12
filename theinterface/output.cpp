@@ -51,16 +51,19 @@ static void output_frame(struct wl_listener *listener, void *data) {
         .when = &now,
     };
     switch (view->type) {
-    case ti::view_type::XDG_SHELL_VIEW: {
+    case ti::XDG_SHELL_VIEW: {
       /* This calls our render_surface function for each surface among the
        * xdg_surface's toplevel and popups. */
-      wlr_xdg_surface_for_each_surface(view->xdg_surface, render_surface,
-                                       &rdata);
+      ti::xdg_view *v =  dynamic_cast<ti::xdg_view *>(view);
+      wlr_xdg_surface_for_each_surface(v->xdg_surface, render_surface, &rdata);
       break;
     }
-    case ti::view_type::XWAYLAND_VIEW: {
+    case ti::XWAYLAND_VIEW: {
       // rendering the surface directly
-      render_surface(view->xwayland_surface->surface, 0, 0, &rdata);
+      // render_surface(view->xwayland_surface->surface, 0, 0, &rdata);
+      ti::xwayland_view *v =  dynamic_cast<ti::xwayland_view *>(view);
+      wlr_surface_for_each_surface(v->get_wlr_surface(), render_surface,
+                                   &rdata);
       break;
     }
     }
@@ -93,14 +96,14 @@ void handle_new_output(struct wl_listener *listener, void *data) {
    * would let the user configure it. */
   if (!wl_list_empty(&wlr_output->modes)) {
 
-    // EVIL
-    struct wlr_output_mode *m;
-    wl_list_for_each(m, &wlr_output->modes, link) {
-      if (m->width == 1440 && m->height == 900) {
-        break;
-      }
-    };
-    struct wlr_output_mode *mode = m; // wlr_output_preferred_mode(wlr_output);
+    /// EVIL: force modeset
+    // struct wlr_output_mode *m;
+    // wl_list_for_each(m, &wlr_output->modes, link) {
+    //   if (m->width == 1440 && m->height == 900) {
+    //     break;
+    //   }
+    // };
+    struct wlr_output_mode *mode = wlr_output_preferred_mode(wlr_output); // m;
 
     wlr_output_set_mode(wlr_output, mode);
     wlr_output_enable(wlr_output, true);
