@@ -49,12 +49,12 @@ void ti::view::focus(struct wlr_surface *surface) {
     surf = xwayland_surface->surface;
     break;
   }
+
   /*
    * Tell the seat to have the keyboard enter this surface. wlroots will keep
    * track of this and automatically send key events to the appropriate
    * clients without additional work on your part.
    */
-
   wlr_seat_keyboard_notify_enter(server->seat, surf, keyboard->keycodes,
                                  keyboard->num_keycodes, &keyboard->modifiers);
 }
