@@ -39,7 +39,12 @@ static void begin_interactive(ti::xdg_view *view, ti::cursor_mode mode,
 static void handle_xdg_surface_map(struct wl_listener *listener, void *data) {
   ti::xdg_view *view = wl_container_of(listener, view, map);
   view->mapped = true;
-  view->focus(view->xdg_surface->surface);
+  if (view->was_ever_mapped == false) {
+    view->was_ever_mapped = true;
+    ti::view *v = dynamic_cast<ti::view *>(view);
+    wl_list_insert(&view->server->wem_views, &v->wem_link);
+  }
+  view->focus(view->surface);
 }
 
 /** Called when the surface is unmapped, and should no longer be shown. */
@@ -54,7 +59,12 @@ static void handle_xdg_surface_destroy(struct wl_listener *listener,
   ti::view *view = wl_container_of(listener, view, destroy);
   wl_list_remove(&view->link);
 
-  delete view;
+  if (view->was_ever_mapped) {
+    wl_list_remove(&view->wem_link);
+  }
+
+  ti::xdg_view *v = dynamic_cast<ti::xdg_view *>(view);
+  delete v;
 }
 
 /** This event is raised when a client would like to begin an interactive
@@ -84,7 +94,7 @@ static void handle_xdg_toplevel_request_resize(struct wl_listener *listener,
 void handle_new_xdg_surface(struct wl_listener *listener, void *data) {
   ti::server *server = wl_container_of(listener, server, new_xdg_surface);
   struct wlr_xdg_surface *xdg_surface =
- reinterpret_cast<struct wlr_xdg_surface *>(data);
+      reinterpret_cast<struct wlr_xdg_surface *>(data);
   if (xdg_surface->role != WLR_XDG_SURFACE_ROLE_TOPLEVEL) {
     return;
   }
@@ -94,12 +104,13 @@ void handle_new_xdg_surface(struct wl_listener *listener, void *data) {
 
   view->server = server;
   view->xdg_surface = xdg_surface;
+  view->surface = xdg_surface->surface;
 
   // Find out the client's pid
   // ONLY WORKS WITH WAYLAND SURFACES!! DOESNT WORK WITH XWAYLAND
   struct wl_client *client =
       wl_resource_get_client(view->xdg_surface->resource);
-  wl_client_get_credentials(client, &view->pid, NULL, NULL);
+  wl_client_get_credentials(client, &view->pid, &view->uid, &view->gid);
 
   /* Listen to the various events it can emit */
   view->map.notify = handle_xdg_surface_map;
@@ -117,7 +128,7 @@ void handle_new_xdg_surface(struct wl_listener *listener, void *data) {
   wl_signal_add(&toplevel->events.request_resize, &view->request_resize);
 
   /* Add it to the list of views. */
-  ti::view *v =  dynamic_cast<ti::view *>(view);
+  ti::view *v = dynamic_cast<ti::view *>(view);
   wl_list_insert(&server->views, &v->link);
 }
 

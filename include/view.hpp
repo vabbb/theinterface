@@ -33,12 +33,16 @@ class view {
 public:
   int x, y;
   pid_t pid;
+  uid_t uid;
+  gid_t gid;
   bool mapped;
+  bool was_ever_mapped;
 
   class server *server;
   struct wl_list link;     // ti::server::views
+  struct wl_list wem_link; // ti::server::wem_views
   struct wl_list children; // ti::view_child::link
-  // struct wlr_surface *surface;
+  struct wlr_surface *surface;
 
   struct wl_listener map;
   struct wl_listener unmap;

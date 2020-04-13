@@ -9,13 +9,42 @@ extern "C" {
 
 #ifdef WLR_HAS_XWAYLAND
 
+static void handle_xwayland_surface_commit(struct wl_listener *listener,
+                                           void *data) {
+  ti::xwayland_view *view = wl_container_of(listener, view, commit);
+  // view_damage_part(view);
+}
+
 static void handle_xwayland_surface_map(struct wl_listener *listener,
                                         void *data) {
-  ti::server *server = wl_container_of(listener, server, new_xwayland_surface);
   ti::xwayland_view *view = wl_container_of(listener, view, map);
+  struct wlr_xwayland_surface *xwayland_surface =
+      reinterpret_cast<struct wlr_xwayland_surface *>(data);
+
+  if (view->was_ever_mapped == false) {
+    view->was_ever_mapped = true;
+    ti::xwayland_view *v = dynamic_cast<ti::xwayland_view *>(view);
+    wl_list_insert(&view->server->wem_views, &v->wem_link);
+  }
+
+  if (xwayland_surface->override_redirect) {
+    // This window used not to have the override redirect flag and has it
+    // now. Switch to unmanaged.
+    handle_xwayland_surface_destroy(&view->destroy, &view->xwayland_surface);
+    xwayland_surface->data = NULL;
+    /// TODO: create unmanaged view and map it
+    return;
+  }
+
+  view->surface = xwayland_surface->surface;
+  view->pid = xwayland_surface->pid;
   view->mapped = true;
+
+  view->commit.notify = handle_xwayland_surface_commit;
+  wl_signal_add(&view->xwayland_surface->surface->events.commit, &view->commit);
+
   if (wlr_xwayland_or_surface_wants_focus(view->xwayland_surface)) {
-    /// TODO: FOCUS VIEW
+    view->focus(view->surface);
   }
 }
 
@@ -27,25 +56,42 @@ static void handle_xwayland_surface_unmap(struct wl_listener *listener,
 }
 
 /** Called when the surface is destroyed and should never be shown again. */
-static void handle_xwayland_surface_destroy(struct wl_listener *listener,
-                                            void *data) {
+void handle_xwayland_surface_destroy(struct wl_listener *listener, void *data) {
   ti::xwayland_view *view = wl_container_of(listener, view, destroy);
+
+  // if view is mapped, we call handle_xwayland_surface_unmap first
+  if (view->mapped) {
+    handle_xwayland_surface_unmap(&view->unmap, &view->xwayland_surface);
+  }
+
   wl_list_remove(&view->link);
 
-  delete view;
+  if (view->was_ever_mapped) {
+    wl_list_remove(&view->wem_link);
+  }
+
+  ti::xwayland_view *v = dynamic_cast<ti::xwayland_view *>(view);
+  delete v;
 }
 
 void handle_new_xwayland_surface(struct wl_listener *listener, void *data) {
   ti::server *server = wl_container_of(listener, server, new_xwayland_surface);
   struct wlr_xwayland_surface *xwayland_surface =
-   reinterpret_cast<struct wlr_xwayland_surface *>(data);
+      reinterpret_cast<struct wlr_xwayland_surface *>(data);
+
+  if (xwayland_surface->override_redirect) {
+    wlr_log(WLR_DEBUG, "New xwayland unmanaged surface");
+    /// TODO: something
+    return;
+  }
+
+  wlr_log(WLR_DEBUG, "New xwayland surface title='%s' class='%s'",
+          xwayland_surface->title, xwayland_surface->c_class);
+
   /* Allocate a ti::view for this surface */
   ti::xwayland_view *view = new ti::xwayland_view;
   view->server = server;
   view->xwayland_surface = xwayland_surface;
-
-  view->pid = view->xwayland_surface->pid;
-  wlr_log(WLR_DEBUG, "SETTING XWAY PID = %d", view->pid);
 
   /* Listen to the various events it can emit */
   view->map.notify = handle_xwayland_surface_map;
@@ -63,7 +109,7 @@ void handle_new_xwayland_surface(struct wl_listener *listener, void *data) {
   //   wl_signal_add(&toplevel->events.request_resize, &view->request_resize);
 
   /* Add it to the list of views. */
-  ti::view *v =  dynamic_cast<ti::view *>(view);
+  ti::view *v = dynamic_cast<ti::view *>(view);
   wl_list_insert(&server->views, &v->link);
 }
 

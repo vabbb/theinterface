@@ -57,6 +57,10 @@ ti::server::server() {
   new_xdg_surface.notify = handle_new_xdg_surface;
   wl_signal_add(&xdg_shell->events.new_surface, &new_xdg_surface);
 
+  // these are all the views with was_ever_mapped set to true. We need this for
+  // alt+tab to work
+  wl_list_init(&wem_views);
+
   /*
    * Creates a cursor, which is a wlroots utility for tracking the cursor
    * image shown on screen.
@@ -83,15 +87,15 @@ ti::server::server() {
    *
    * And more comments are sprinkled throughout the notify functions above.
    */
-  cursor_motion.notify = server_cursor_motion;
+  cursor_motion.notify = handle_cursor_motion;
   wl_signal_add(&cursor->events.motion, &cursor_motion);
-  cursor_motion_absolute.notify = server_cursor_motion_absolute;
+  cursor_motion_absolute.notify = handle_cursor_motion_absolute;
   wl_signal_add(&cursor->events.motion_absolute, &cursor_motion_absolute);
-  cursor_button.notify = server_cursor_button;
+  cursor_button.notify = handle_cursor_button;
   wl_signal_add(&cursor->events.button, &cursor_button);
-  cursor_axis.notify = server_cursor_axis;
+  cursor_axis.notify = handle_cursor_axis;
   wl_signal_add(&cursor->events.axis, &cursor_axis);
-  cursor_frame.notify = server_cursor_frame;
+  cursor_frame.notify = handle_cursor_frame;
   wl_signal_add(&cursor->events.frame, &cursor_frame);
 
   /*
@@ -101,7 +105,7 @@ ti::server::server() {
    * let us know when new input devices are available on the backend.
    */
   wl_list_init(&keyboards);
-  new_input.notify = server_new_input;
+  new_input.notify = handle_new_input;
   wl_signal_add(&backend->events.new_input, &new_input);
   seat = wlr_seat_create(display, "seat0");
   request_cursor.notify = seat_request_cursor;

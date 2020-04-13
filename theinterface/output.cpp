@@ -39,7 +39,7 @@ static void output_frame(struct wl_listener *listener, void *data) {
   /* Each subsequent window we render is rendered on top of the last. Because
    * our view list is ordered front-to-back, we iterate over it backwards. */
   ti::view *view;
-  wl_list_for_each_reverse(view, &output->server->views, link) {
+  wl_list_for_each_reverse(view, &output->server->wem_views, wem_link) {
     if (!view->mapped) {
       /* An unmapped view should not be rendered. */
       continue;
@@ -54,16 +54,15 @@ static void output_frame(struct wl_listener *listener, void *data) {
     case ti::XDG_SHELL_VIEW: {
       /* This calls our render_surface function for each surface among the
        * xdg_surface's toplevel and popups. */
-      ti::xdg_view *v =  dynamic_cast<ti::xdg_view *>(view);
+      ti::xdg_view *v = dynamic_cast<ti::xdg_view *>(view);
       wlr_xdg_surface_for_each_surface(v->xdg_surface, render_surface, &rdata);
       break;
     }
     case ti::XWAYLAND_VIEW: {
       // rendering the surface directly
       // render_surface(view->xwayland_surface->surface, 0, 0, &rdata);
-      ti::xwayland_view *v =  dynamic_cast<ti::xwayland_view *>(view);
-      wlr_surface_for_each_surface(v->get_wlr_surface(), render_surface,
-                                   &rdata);
+      ti::xwayland_view *v = dynamic_cast<ti::xwayland_view *>(view);
+      wlr_surface_for_each_surface(v->surface, render_surface, &rdata);
       break;
     }
     }

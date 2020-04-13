@@ -8,14 +8,15 @@ extern "C" {
 }
 
 #include "keyboard.hpp"
+#include "util.hpp"
 #include "xdg_shell.hpp"
 
 #include "server.hpp"
 
-static void keyboard_handle_modifiers(struct wl_listener *listener,
+/** This event is raised when a modifier key, such as shift or alt, is
+ * pressed. We simply communicate this to the client. */
+static void handle_keyboard_modifiers(struct wl_listener *listener,
                                       void *data) {
-  /* This event is raised when a modifier key, such as shift or alt, is
-   * pressed. We simply communicate this to the client. */
   ti::keyboard *keyboard = wl_container_of(listener, keyboard, modifiers);
   /*
    * A seat can only have one keyboard, but this is a limitation of the
@@ -29,8 +30,8 @@ static void keyboard_handle_modifiers(struct wl_listener *listener,
                                      &keyboard->device->keyboard->modifiers);
 }
 
-/** Change virtual terminal to the one specified by keysym
- * called by using ctrl+alt+fn1..12 keys */
+/// Change virtual terminal to the one specified by keysym called by using
+/// ctrl+alt+fn1..12 keys
 static bool ti_chvt(ti::server *server, uint32_t keysym) {
   if (wlr_backend_is_multi(server->backend)) {
     struct wlr_session *session = wlr_backend_get_session(server->backend);
@@ -43,29 +44,36 @@ static bool ti_chvt(ti::server *server, uint32_t keysym) {
   return false;
 }
 
-/** Start the alt+tab handler */
+/// Start the alt+tab handler
 static bool ti_alt_tab(ti::server *server, uint32_t keysym) {
   /* Cycle to the next view */
-  if (wl_list_length(&server->views) < 2) {
+  if (wl_list_length(&server->wem_views) < 2) {
     return false;
   }
-  ti::xdg_view *current_view =
-      wl_container_of(server->views.next, current_view, link);
-  ti::xdg_view *next_view =
-      wl_container_of(current_view->link.next, next_view, link);
-  next_view->focus(next_view->xdg_surface->surface);
+  ti::view *current_view =
+      wl_container_of(server->wem_views.next, current_view, wem_link);
+  ti::view *next_view =
+      wl_container_of(current_view->wem_link.next, next_view, wem_link);
+  next_view->focus(next_view->surface);
   /* Move the previous view to the end of the list */
-  wl_list_remove(&current_view->link);
-  wl_list_insert(server->views.prev, &current_view->link);
+  wl_list_remove(&current_view->wem_link);
+  wl_list_insert(server->wem_views.prev, &current_view->wem_link);
   return true;
 }
 
-/** alt+f4 handler */
+/// alt+f4 handler
 static bool ti_alt_f4(ti::server *server, uint32_t keysym) {
-  ti::xdg_view *current_view =
-      wl_container_of(server->views.next, current_view, link);
-  kill(current_view->pid, SIGKILL);
-  return true;
+  bool ret = false;
+  ti::view *current_view =
+      wl_container_of(server->wem_views.next, current_view, wem_link);
+
+  if (wl_list_length(&server->wem_views) > 1) {
+    ti::view *next_view =
+        wl_container_of(current_view->wem_link.next, next_view, wem_link);
+    next_view->focus(next_view->surface);
+  }
+
+  return safe_kill(current_view->pid, SIGKILL);
 }
 
 /*
@@ -177,7 +185,7 @@ void ti::server::new_keyboard(struct wlr_input_device *device) {
   wlr_keyboard_set_repeat_info(device->keyboard, 25, 600);
 
   /* Here we set up listeners for keyboard events. */
-  keyboard->modifiers.notify = keyboard_handle_modifiers;
+  keyboard->modifiers.notify = handle_keyboard_modifiers;
   wl_signal_add(&device->keyboard->events.modifiers, &keyboard->modifiers);
   keyboard->key.notify = keyboard_handle_key;
   wl_signal_add(&device->keyboard->events.key, &keyboard->key);

@@ -8,7 +8,7 @@
 void seat_request_cursor(struct wl_listener *listener, void *data) {
   ti::server *server = wl_container_of(listener, server, request_cursor);
   struct wlr_seat_pointer_request_set_cursor_event *event =
-      (struct wlr_seat_pointer_request_set_cursor_event *)data;
+      reinterpret_cast<wlr_seat_pointer_request_set_cursor_event *>(data);
   struct wlr_seat_client *focused_client =
       server->seat->pointer_state.focused_client;
   /* This can be sent by any client, so we check to make sure this one is
@@ -35,15 +35,17 @@ bool view_at(ti::view *view, double lx, double ly, struct wlr_surface **surface,
 
   switch (view->type) {
   case ti::XDG_SHELL_VIEW: {
-    ti::xdg_view *v =  dynamic_cast<ti::xdg_view *>(view);
+    ti::xdg_view *v = dynamic_cast<ti::xdg_view *>(view);
     _surface = wlr_xdg_surface_surface_at(v->xdg_surface, view_sx, view_sy,
                                           &_sx, &_sy);
     break;
   }
   case ti::XWAYLAND_VIEW: {
-    ti::xwayland_view *v =  dynamic_cast<ti::xwayland_view *>(view);
-    _surface = wlr_surface_surface_at(v->get_wlr_surface(), view_sx, view_sy,
-                                      &_sx, &_sy);
+    ti::xwayland_view *v = dynamic_cast<ti::xwayland_view *>(view);
+    if (v->get_wlr_surface()) {
+      _surface = wlr_surface_surface_at(v->get_wlr_surface(), view_sx, view_sy,
+                                        &_sx, &_sy);
+    }
     break;
   }
   default: {
@@ -64,7 +66,7 @@ ti::view *desktop_view_at(ti::server *server, double lx, double ly,
                           struct wlr_surface **surface, double *sx,
                           double *sy) {
   ti::view *view;
-  wl_list_for_each(view, &server->views, link) {
+  wl_list_for_each(view, &server->wem_views, wem_link) {
     if (view_at(view, lx, ly, surface, sx, sy)) {
       return view;
     }

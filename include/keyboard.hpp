@@ -12,6 +12,6 @@ struct keyboard {
   struct wl_listener modifiers;
   struct wl_listener key;
 };
-}
+} // namespace ti
 
 #endif
