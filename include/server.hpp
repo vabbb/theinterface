@@ -4,6 +4,7 @@
 extern "C" {
 #include <wlr/backend.h>
 #include <wlr/config.h>
+#include <wlr/types/wlr_foreign_toplevel_management_v1.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/types/wlr_xdg_shell.h>
 }
@@ -37,6 +38,7 @@ public:
   /// All the views that have been mapped at least once. This is used to make
   /// Alt+Tab work
   struct wl_list wem_views;
+  struct wlr_foreign_toplevel_manager_v1 *foreign_toplevel_manager_v1;
 
   struct wlr_cursor *cursor;
   struct wlr_xcursor_manager *cursor_mgr;

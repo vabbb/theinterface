@@ -1,5 +1,7 @@
 #include "view.hpp"
 #include "output.hpp"
+#include "xdg_shell.hpp"
+#include "xwayland.hpp"
 
 // mapped is false, so we only map it when the view is ready
 ti::view::view(enum view_type t)
@@ -37,17 +39,22 @@ void ti::view::focus(struct wlr_surface *surface) {
     wl_list_remove(&wem_link);
     wl_list_insert(&server->wem_views, &wem_link);
   }
+
   wlr_surface *surf;
   /* Activate the new surface */
   switch (type) {
-  case ti::XDG_SHELL_VIEW:
-    wlr_xdg_toplevel_set_activated(xdg_surface, true);
-    surf = xdg_surface->surface;
+  case ti::XDG_SHELL_VIEW: {
+    ti::xdg_view *v = dynamic_cast<ti::xdg_view *>(this);
+    wlr_xdg_toplevel_set_activated(v->xdg_surface, true);
+    surf = v->xdg_surface->surface;
     break;
-  case ti::XWAYLAND_VIEW:
-    wlr_xwayland_surface_activate(xwayland_surface, true);
-    surf = xwayland_surface->surface;
+  }
+  case ti::XWAYLAND_VIEW: {
+    ti::xwayland_view *v = dynamic_cast<ti::xwayland_view *>(this);
+    wlr_xwayland_surface_activate(v->xwayland_surface, true);
+    surf = v->xwayland_surface->surface;
     break;
+  }
   }
 
   /*

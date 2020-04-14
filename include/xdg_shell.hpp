@@ -8,6 +8,10 @@
 namespace ti {
 class xdg_view : public view {
 public:
+  struct wlr_xdg_surface *xdg_surface;
+
+	struct wl_listener set_app_id;
+
   std::string get_title() override;
   xdg_view();
   ~xdg_view();

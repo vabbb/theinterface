@@ -8,6 +8,7 @@ extern "C" {
 #undef static
 }
 
+#include "output.hpp"
 #include "render.hpp"
 #include "server.hpp"
 #include "xdg_shell.hpp"

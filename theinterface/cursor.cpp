@@ -9,6 +9,7 @@ extern "C" {
 #include "seat.hpp"
 #include "server.hpp"
 #include "xdg_shell.hpp"
+#include "xwayland.hpp"
 
 #include "cursor.hpp"
 
@@ -84,7 +85,19 @@ static void process_cursor_resize(ti::server *server, uint32_t time) {
   }
   view->x = x;
   view->y = y;
-  wlr_xdg_toplevel_set_size(view->xdg_surface, width, height);
+
+  switch (view->type) {
+  case ti::XDG_SHELL_VIEW: {
+    ti::xdg_view *v = dynamic_cast<ti::xdg_view *>(view);
+    wlr_xdg_toplevel_set_size(v->xdg_surface, width, height);
+    break;
+  }
+  case ti::XWAYLAND_VIEW: {
+    ti::xwayland_view *v = dynamic_cast<ti::xwayland_view *>(view);
+    /// TODO:
+    break;
+  }
+  }
 }
 
 static void process_cursor_motion(ti::server *server, uint32_t time) {
@@ -185,9 +198,6 @@ void handle_cursor_button(struct wl_listener *listener, void *data) {
     case ti::XWAYLAND_VIEW: {
       ti::xwayland_view *v = dynamic_cast<ti::xwayland_view *>(view);
       v->focus(surface);
-      break;
-    }
-    default: {
       break;
     }
     }

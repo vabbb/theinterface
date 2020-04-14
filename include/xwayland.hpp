@@ -18,7 +18,10 @@ extern "C" {
 namespace ti {
 class xwayland_view : public view {
 public:
+  struct wlr_xwayland_surface *xwayland_surface;
+
   struct wl_listener commit;
+  struct wl_listener request_configure;
 
   std::string get_title() override;
 

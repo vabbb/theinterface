@@ -2,6 +2,7 @@
 
 #include "server.hpp"
 #include "xdg_shell.hpp"
+#include "xwayland.hpp"
 
 #include "seat.hpp"
 
@@ -28,14 +29,13 @@ bool view_at(ti::view *view, double lx, double ly, struct wlr_surface **surface,
   double view_sx = lx - view->x;
   double view_sy = ly - view->y;
 
-  struct wlr_surface_state *state = &view->xdg_surface->surface->current;
-
   double _sx, _sy;
   struct wlr_surface *_surface = NULL;
 
   switch (view->type) {
   case ti::XDG_SHELL_VIEW: {
     ti::xdg_view *v = dynamic_cast<ti::xdg_view *>(view);
+    // auto *state = &v->xdg_surface->surface->current;
     _surface = wlr_xdg_surface_surface_at(v->xdg_surface, view_sx, view_sy,
                                           &_sx, &_sy);
     break;

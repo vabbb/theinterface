@@ -12,6 +12,8 @@ struct output {
 };
 } // namespace ti
 
+/* This event is rasied by the backend when a new output (aka a display or
+ * monitor) becomes available. */
 void handle_new_output(struct wl_listener *listener, void *data);
 
 #endif

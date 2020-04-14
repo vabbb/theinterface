@@ -1,5 +1,6 @@
 extern "C" {
 #include <wlr/config.h>
+#include <wlr/types/wlr_foreign_toplevel_management_v1.h>
 #include <wlr/util/log.h>
 }
 
@@ -40,6 +41,21 @@ static void handle_xwayland_surface_map(struct wl_listener *listener,
   view->pid = xwayland_surface->pid;
   view->mapped = true;
 
+  if (view->xwayland_surface->decorations ==
+      WLR_XWAYLAND_SURFACE_DECORATIONS_ALL) {
+    view->decorated = true;
+    view->border_width = 4;
+    view->titlebar_height = 12;
+  }
+
+  view->toplevel_handle = wlr_foreign_toplevel_handle_v1_create(
+      view->server->foreign_toplevel_manager_v1);
+
+  wlr_foreign_toplevel_handle_v1_set_title(
+      view->toplevel_handle, view->xwayland_surface->title ?: "none");
+  wlr_foreign_toplevel_handle_v1_set_app_id(
+      view->toplevel_handle, view->xwayland_surface->c_class ?: "none");
+
   view->commit.notify = handle_xwayland_surface_commit;
   wl_signal_add(&view->xwayland_surface->surface->events.commit, &view->commit);
 
@@ -53,6 +69,10 @@ static void handle_xwayland_surface_unmap(struct wl_listener *listener,
                                           void *data) {
   ti::xwayland_view *view = wl_container_of(listener, view, unmap);
   view->mapped = false;
+  if (view->toplevel_handle) {
+    wlr_foreign_toplevel_handle_v1_destroy(view->toplevel_handle);
+    view->toplevel_handle = NULL;
+  }
 }
 
 /** Called when the surface is destroyed and should never be shown again. */
@@ -72,6 +92,21 @@ void handle_xwayland_surface_destroy(struct wl_listener *listener, void *data) {
 
   ti::xwayland_view *v = dynamic_cast<ti::xwayland_view *>(view);
   delete v;
+}
+
+/** called on title change */
+static void handle_set_title(struct wl_listener *listener, void *data) {
+  // do nothing...?
+  // ti::xwayland_view *view = wl_container_of(listener, view, destroy);
+}
+
+static void handle_request_configure(struct wl_listener *listener, void *data) {
+  ti::xwayland_view *view = wl_container_of(listener, view, request_configure);
+  struct wlr_xwayland_surface_configure_event *event =
+      reinterpret_cast<struct wlr_xwayland_surface_configure_event *>(data);
+
+  wlr_xwayland_surface_configure(view->xwayland_surface, event->x, event->y,
+                                 event->width, event->height);
 }
 
 void handle_new_xwayland_surface(struct wl_listener *listener, void *data) {
@@ -100,6 +135,12 @@ void handle_new_xwayland_surface(struct wl_listener *listener, void *data) {
   wl_signal_add(&xwayland_surface->events.unmap, &view->unmap);
   view->destroy.notify = handle_xwayland_surface_destroy;
   wl_signal_add(&xwayland_surface->events.destroy, &view->destroy);
+
+  view->set_title.notify = handle_set_title;
+  wl_signal_add(&xwayland_surface->events.set_title, &view->set_title);
+  view->request_configure.notify = handle_request_configure;
+  wl_signal_add(&xwayland_surface->events.request_configure,
+                &view->request_configure);
 
   /* cotd */
   //   struct wlr_xdg_toplevel *toplevel = xwayland_surface->toplevel;

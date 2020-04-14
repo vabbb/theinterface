@@ -1,13 +1,15 @@
 extern "C" {
 #include <wlr/types/wlr_data_device.h>
+#include <wlr/types/wlr_foreign_toplevel_management_v1.h>
 #include <wlr/util/log.h>
 }
 
 #include "output.hpp"
 #include "seat.hpp"
-#include "server.hpp"
 #include "xdg_shell.hpp"
 #include "xwayland.hpp"
+
+#include "server.hpp"
 
 ti::server::server() {
   /* The Wayland display is managed by libwayland. It handles accepting
@@ -60,6 +62,8 @@ ti::server::server() {
   // these are all the views with was_ever_mapped set to true. We need this for
   // alt+tab to work
   wl_list_init(&wem_views);
+
+  foreign_toplevel_manager_v1 = wlr_foreign_toplevel_manager_v1_create(display);
 
   /*
    * Creates a cursor, which is a wlroots utility for tracking the cursor

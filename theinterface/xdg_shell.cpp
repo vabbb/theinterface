@@ -1,6 +1,7 @@
 #include <cstdlib>
 
 extern "C" {
+#include <wlr/types/wlr_foreign_toplevel_management_v1.h>
 #include <wlr/util/log.h>
 }
 #include "server.hpp"
@@ -39,6 +40,9 @@ static void begin_interactive(ti::xdg_view *view, ti::cursor_mode mode,
 static void handle_xdg_surface_map(struct wl_listener *listener, void *data) {
   ti::xdg_view *view = wl_container_of(listener, view, map);
   view->mapped = true;
+  view->toplevel_handle = wlr_foreign_toplevel_handle_v1_create(
+      view->server->foreign_toplevel_manager_v1);
+
   if (view->was_ever_mapped == false) {
     view->was_ever_mapped = true;
     ti::view *v = dynamic_cast<ti::view *>(view);
@@ -51,6 +55,10 @@ static void handle_xdg_surface_map(struct wl_listener *listener, void *data) {
 static void handle_xdg_surface_unmap(struct wl_listener *listener, void *data) {
   ti::view *view = wl_container_of(listener, view, unmap);
   view->mapped = false;
+  if (view->toplevel_handle) {
+    wlr_foreign_toplevel_handle_v1_destroy(view->toplevel_handle);
+    view->toplevel_handle = NULL;
+  }
 }
 
 /* Called when the surface is destroyed and should never be shown again. */

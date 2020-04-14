@@ -10,6 +10,7 @@ extern "C" {
 
 #include "output.hpp"
 #include "render.hpp"
+#include "util.hpp"
 #include "xdg_shell.hpp"
 
 #include "server.hpp"
@@ -80,11 +81,11 @@ static void output_frame(struct wl_listener *listener, void *data) {
    * on-screen. */
   wlr_renderer_end(renderer);
   wlr_output_commit(output->wlr_output);
+
+  fp3s_counter(now);
 }
 
 void handle_new_output(struct wl_listener *listener, void *data) {
-  /* This event is rasied by the backend when a new output (aka a display or
-   * monitor) becomes available. */
   ti::server *server = wl_container_of(listener, server, new_output);
   struct wlr_output *wlr_output = reinterpret_cast<struct wlr_output *>(data);
 
