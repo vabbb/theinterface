@@ -25,7 +25,6 @@ class view {
 public:
   const enum view_type type;
   bool mapped, was_ever_mapped;
-  uint32_t x, y;
   uint32_t border_width, titlebar_height;
   bool decorated;
 
@@ -65,12 +64,15 @@ public:
   struct wl_listener toplevel_handle_request_close;
 
   view(enum view_type t);
-  view(enum view_type t, uint32_t _x, uint32_t _y);
+  view(enum view_type t, int32_t __x, int32_t __y);
   virtual ~view() = 0;
   void get_box(wlr_box &box);
   void get_deco_box(wlr_box &box);
   virtual std::string get_title() = 0;
   void focus(struct wlr_surface *surface);
+  void for_each_surface(wlr_surface_iterator_func_t iterator, void *user_data);
+  void damage_whole();
+  void update_position(int32_t __x, int32_t __y);
 };
 } // namespace ti
 

@@ -36,7 +36,7 @@ void scissor_output(struct wlr_output *wlr_output, pixman_box32_t *rect) {
 
 void render_decorations(ti::output *output, ti::view *view,
                         ti::render_data *data) {
-  float color[4] = {0.2, 0.2, 0.2, 1.0}; // view->alpha};
+  float color[4] = {0.15, 0.15, 0.15, view->alpha};
   pixman_box32_t *rects;
   if (!view->decorated || view->surface == NULL) {
     return;
@@ -55,7 +55,7 @@ void render_decorations(ti::output *output, ti::view *view,
   pixman_region32_init(&damage);
   pixman_region32_union_rect(&damage, &damage, rotated.x, rotated.y,
                              rotated.width, rotated.height);
-  pixman_region32_intersect(&damage, &damage, &damage); // data->damage);
+  pixman_region32_intersect(&damage, &damage, data->damage);
   bool damaged = pixman_region32_not_empty(&damage);
   if (!damaged) {
     goto buffer_damage_finish;
@@ -70,6 +70,38 @@ void render_decorations(ti::output *output, ti::view *view,
   for (int i = 0; i < nrects; ++i) {
     scissor_output(output->wlr_output, &rects[i]);
     wlr_render_quad_with_matrix(renderer, color, matrix);
+  }
+
+buffer_damage_finish:
+  pixman_region32_fini(&damage);
+}
+
+static void render_texture(struct wlr_output *wlr_output,
+                           pixman_region32_t *output_damage,
+                           struct wlr_texture *texture,
+                           const struct wlr_box *box, const float matrix[9],
+                           float alpha) {
+  pixman_box32_t *rects = nullptr;
+  struct wlr_renderer *renderer = wlr_backend_get_renderer(wlr_output->backend);
+
+  struct wlr_box rotated;
+  wlr_box_rotated_bounds(&rotated, box, 0.0); // 0.0 rotation
+
+  pixman_region32_t damage;
+  pixman_region32_init(&damage);
+  pixman_region32_union_rect(&damage, &damage, rotated.x, rotated.y,
+                             rotated.width, rotated.height);
+  pixman_region32_intersect(&damage, &damage, output_damage);
+  bool damaged = pixman_region32_not_empty(&damage);
+  if (!damaged) {
+    goto buffer_damage_finish;
+  }
+
+  int nrects;
+  rects = pixman_region32_rectangles(&damage, &nrects);
+  for (int i = 0; i < nrects; ++i) {
+    scissor_output(wlr_output, &rects[i]);
+    wlr_render_texture_with_matrix(renderer, texture, matrix, alpha);
   }
 
 buffer_damage_finish:
@@ -101,7 +133,7 @@ void render_surface(struct wlr_surface *surface, int sx, int sy, void *data) {
   double ox = 0, oy = 0;
   wlr_output_layout_output_coords(view->server->output_layout, output, &ox,
                                   &oy);
-  ox += view->x + sx, oy += view->y + sy;
+  ox += view->box.x + sx, oy += view->box.y + sy;
 
   /* We also have to apply the scale factor for HiDPI outputs. This is only
    * part of the puzzle, TinyWL does not fully support HiDPI. */
@@ -131,6 +163,8 @@ void render_surface(struct wlr_surface *surface, int sx, int sy, void *data) {
   /* This takes our matrix, the texture, and an alpha, and performs the actual
    * rendering on the GPU. */
   wlr_render_texture_with_matrix(rdata->renderer, texture, matrix, 1);
+
+  render_texture(output, rdata->damage, texture, &box, matrix, rdata->alpha);
 
   /* This lets the client know that we've displayed that frame and it can
    * prepare another one now if it likes. */

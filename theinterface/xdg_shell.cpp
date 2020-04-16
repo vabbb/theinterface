@@ -25,8 +25,8 @@ static void begin_interactive(ti::xdg_view *view, ti::cursor_mode mode,
   struct wlr_box geo_box;
   wlr_xdg_surface_get_geometry(view->xdg_surface, &geo_box);
   if (mode == ti::CURSOR_MOVE) {
-    server->grab_x = server->cursor->x - view->x;
-    server->grab_y = server->cursor->y - view->y;
+    server->grab_x = server->cursor->x - view->box.x;
+    server->grab_y = server->cursor->y - view->box.y;
   } else {
     server->grab_x = server->cursor->x + geo_box.x;
     server->grab_y = server->cursor->y + geo_box.y;
@@ -113,6 +113,10 @@ void handle_new_xdg_surface(struct wl_listener *listener, void *data) {
   view->server = server;
   view->xdg_surface = xdg_surface;
   view->surface = xdg_surface->surface;
+  view->box.x = xdg_surface->geometry.x;
+  view->box.y = xdg_surface->geometry.y;
+  view->box.width = xdg_surface->geometry.width;
+  view->box.height = xdg_surface->geometry.height;
 
   // Find out the client's pid
   // ONLY WORKS WITH WAYLAND SURFACES!! DOESNT WORK WITH XWAYLAND

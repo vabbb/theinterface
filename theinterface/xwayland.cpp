@@ -64,6 +64,8 @@ static void handle_xwayland_surface_map(struct wl_listener *listener,
   view->commit.notify = handle_xwayland_surface_commit;
   wl_signal_add(&view->xwayland_surface->surface->events.commit, &view->commit);
 
+  view->damage_whole();
+
   if (wlr_xwayland_or_surface_wants_focus(view->xwayland_surface)) {
     view->focus(view->surface);
   }
@@ -75,6 +77,9 @@ static void handle_xwayland_surface_unmap(struct wl_listener *listener,
   ti::xwayland_view *view = wl_container_of(listener, view, unmap);
   view->mapped = false;
   view->box.width = view->box.height = 0;
+
+  view->damage_whole();
+
   if (view->toplevel_handle) {
     wlr_foreign_toplevel_handle_v1_destroy(view->toplevel_handle);
     view->toplevel_handle = NULL;
@@ -170,6 +175,6 @@ struct wlr_surface *ti::xwayland_view::get_wlr_surface() {
   return xwayland_surface->surface;
 }
 
-ti::xwayland_view::xwayland_view() : view(ti::XWAYLAND_VIEW) {}
+ti::xwayland_view::xwayland_view() : view(ti::XWAYLAND_VIEW, 50, 50) {}
 ti::xwayland_view::~xwayland_view() {}
 #endif

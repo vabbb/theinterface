@@ -2,15 +2,20 @@
 #include "xdg_shell.hpp"
 #include "xwayland.hpp"
 
+#include "output.hpp"
+
 #include "view.hpp"
 
 // mapped is false, so we only map it when the view is ready
 ti::view::view(enum view_type t)
-    : type(t), mapped(false), was_ever_mapped(false), x(0), y(0),
-      decorated(false), alpha(1.0f), title("(nil)") {}
-ti::view::view(enum view_type t, uint32_t _x, uint32_t _y)
-    : type(t), mapped(false), was_ever_mapped(false), x(_x), y(_y),
-      decorated(false), alpha(1.0f), title("(nil)") {}
+    : type(t), mapped(false), was_ever_mapped(false), decorated(false),
+      alpha(1.0f), title("(nil)") {}
+ti::view::view(enum view_type t, int32_t __x, int32_t __y)
+    : type(t), mapped(false), was_ever_mapped(false), decorated(false),
+      alpha(1.0f), title("(nil)") {
+  box.x = __x;
+  box.y = __y;
+}
 ti::view::~view() {}
 
 void ti::view::focus(struct wlr_surface *surface) {
@@ -88,4 +93,27 @@ void ti::view::get_deco_box(wlr_box &_box) {
   _box.y -= (border_width + titlebar_height);
   _box.width += border_width * 2;
   _box.height += (border_width * 2 + titlebar_height);
+}
+
+void ti::view::for_each_surface(wlr_surface_iterator_func_t iterator,
+                                void *user_data) {
+  wlr_surface_for_each_surface(surface, iterator, user_data);
+}
+
+void ti::view::damage_whole() {
+  output *output;
+  wl_list_for_each(output, &this->server->outputs, link) {
+    output_damage_whole_view(this, output);
+  }
+}
+
+void ti::view::update_position(int32_t __x, int32_t __y) {
+  if (box.x == __x && box.y == __y) {
+    return;
+  }
+
+  ti::view::damage_whole();
+  box.x = __x;
+  box.y = __y;
+  ti::view::damage_whole();
 }

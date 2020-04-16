@@ -26,8 +26,8 @@ void seat_request_cursor(struct wl_listener *listener, void *data) {
 
 bool view_at(ti::view *view, double lx, double ly, struct wlr_surface **surface,
              double *sx, double *sy) {
-  double view_sx = lx - view->x;
-  double view_sy = ly - view->y;
+  double view_sx = lx - view->box.x;
+  double view_sy = ly - view->box.y;
 
   double _sx, _sy;
   struct wlr_surface *_surface = NULL;

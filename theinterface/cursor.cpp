@@ -44,8 +44,8 @@ void handle_new_input(struct wl_listener *listener, void *data) {
 
 /* Move the grabbed view to the new position. */
 static void process_cursor_move(ti::server *server, uint32_t time) {
-  server->grabbed_view->x = server->cursor->x - server->grab_x;
-  server->grabbed_view->y = server->cursor->y - server->grab_y;
+  server->grabbed_view->box.x = server->cursor->x - server->grab_x;
+  server->grabbed_view->box.y = server->cursor->y - server->grab_y;
 }
 
 /** Resizing the grabbed view can be a little bit complicated, because we
@@ -61,8 +61,8 @@ static void process_cursor_resize(ti::server *server, uint32_t time) {
   ti::view *view = server->grabbed_view;
   double dx = server->cursor->x - server->grab_x;
   double dy = server->cursor->y - server->grab_y;
-  double x = view->x;
-  double y = view->y;
+  double x = view->box.x;
+  double y = view->box.y;
   int width = server->grab_width;
   int height = server->grab_height;
   if (server->resize_edges & WLR_EDGE_TOP) {
@@ -83,8 +83,8 @@ static void process_cursor_resize(ti::server *server, uint32_t time) {
   } else if (server->resize_edges & WLR_EDGE_RIGHT) {
     width += dx;
   }
-  view->x = x;
-  view->y = y;
+  view->box.x = x;
+  view->box.y = y;
 
   switch (view->type) {
   case ti::XDG_SHELL_VIEW: {

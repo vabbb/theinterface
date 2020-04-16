@@ -18,10 +18,175 @@ extern "C" {
 
 #include "server.hpp"
 
+/**
+ * Rotate a child's position relative to a parent. The parent size is (pw, ph),
+ * the child position is (*sx, *sy) and its size is (sw, sh).
+ */
+void rotate_child_position(double *sx, double *sy, double sw, double sh,
+                           double pw, double ph, float rotation) {
+  if (rotation == 0.0) {
+    return;
+  }
+
+  // Coordinates relative to the center of the subsurface
+  double cx = *sx - pw / 2 + sw / 2, cy = *sy - ph / 2 + sh / 2;
+  // Rotated coordinates
+  double rx = cos(rotation) * cx - sin(rotation) * cy,
+         ry = cos(rotation) * cy + sin(rotation) * cx;
+  *sx = rx + pw / 2 - sw / 2;
+  *sy = ry + ph / 2 - sh / 2;
+}
+
+static bool get_surface_box(struct surface_iterator_data *data,
+                            struct wlr_surface *surface, int sx, int sy,
+                            struct wlr_box *surface_box) {
+  ti::output *output = data->output;
+
+  if (!wlr_surface_has_buffer(surface)) {
+    return false;
+  }
+
+  int sw = surface->current.width;
+  int sh = surface->current.height;
+
+  double _sx = (double)(sx + surface->sx);
+  double _sy = (double)(sy + surface->sy);
+  rotate_child_position(&_sx, &_sy, sw, sh, data->width, data->height,
+                        data->rotation);
+
+  struct wlr_box box = {
+      .x = (int)(data->ox + _sx),
+      .y = (int)(data->oy + _sy),
+      .width = sw,
+      .height = sh,
+  };
+  if (surface_box != NULL) {
+    *surface_box = box;
+  }
+
+  struct wlr_box rotated_box;
+  wlr_box_rotated_bounds(&rotated_box, &box, data->rotation);
+
+  struct wlr_box output_box;
+  wlr_output_effective_resolution(output->wlr_output, &output_box.width,
+                                  &output_box.height);
+
+  struct wlr_box intersection;
+  return wlr_box_intersection(&intersection, &output_box, &rotated_box);
+}
+
+static void output_for_each_surface_iterator(struct wlr_surface *surface,
+                                             int sx, int sy, void *_data) {
+  struct surface_iterator_data *data = (struct surface_iterator_data *)_data;
+
+  struct wlr_box box;
+  bool intersects = get_surface_box(data, surface, sx, sy, &box);
+  if (!intersects) {
+    return;
+  }
+
+  data->user_iterator(data->output, surface, &box, data->rotation,
+                      data->user_data);
+}
+
+void output_view_for_each_surface(ti::output *output, ti::view *view,
+                                  ti_surface_iterator_func_t iterator,
+                                  void *user_data) {
+  struct wlr_box *output_box = wlr_output_layout_get_box(
+      output->server->output_layout, output->wlr_output);
+  if (!output_box) {
+    return;
+  }
+
+  struct surface_iterator_data data = {
+      .user_iterator = iterator,
+      .user_data = user_data,
+      .output = output,
+      .ox = (double)(view->box.x - output_box->x),
+      .oy = (double)(view->box.y - output_box->y),
+      .width = view->box.width,
+      .height = view->box.height,
+      .rotation = view->rotation,
+  };
+
+  view->for_each_surface(output_for_each_surface_iterator, &data);
+}
+
+inline int scale_length(int length, int offset, float scale) {
+  return round((offset + length) * scale) - round(offset * scale);
+}
+
+void scale_box(struct wlr_box *box, float scale) {
+  box->width = scale_length(box->width, box->x, scale);
+  box->height = scale_length(box->height, box->y, scale);
+  box->x = round(box->x * scale);
+  box->y = round(box->y * scale);
+}
+
+static void damage_surface_iterator(ti::output *output,
+                                    struct wlr_surface *surface,
+                                    struct wlr_box *_box, float rotation,
+                                    void *data) {
+  bool *whole = (bool *)data;
+
+  struct wlr_box box = *_box;
+  scale_box(&box, output->wlr_output->scale);
+
+  int center_x = box.x + box.width / 2;
+  int center_y = box.y + box.height / 2;
+
+  if (pixman_region32_not_empty(&surface->buffer_damage)) {
+    pixman_region32_t damage;
+    pixman_region32_init(&damage);
+    wlr_surface_get_effective_damage(surface, &damage);
+    wlr_region_scale(&damage, &damage, output->wlr_output->scale);
+    if (std::ceil(output->wlr_output->scale) > surface->current.scale) {
+      // When scaling up a surface, it'll become blurry so we need to
+      // expand the damage region
+      wlr_region_expand(&damage, &damage,
+                        std::ceil(output->wlr_output->scale) -
+                            surface->current.scale);
+    }
+    pixman_region32_translate(&damage, box.x, box.y);
+    wlr_region_rotated_bounds(&damage, &damage, rotation, center_x, center_y);
+    wlr_output_damage_add(output->damage, &damage);
+    pixman_region32_fini(&damage);
+  }
+
+  if (*whole) {
+    wlr_box_rotated_bounds(&box, &box, rotation);
+    wlr_output_damage_add_box(output->damage, &box);
+  }
+
+  wlr_output_schedule_frame(output->wlr_output);
+}
+
+static void damage_whole_decoration(ti::view *view, ti::output *output) {
+  if (!view->decorated || view->surface == NULL) {
+    return;
+  }
+
+  struct wlr_box box;
+  output->get_decoration_box(*view, box);
+
+  wlr_box_rotated_bounds(&box, &box, view->rotation);
+
+  wlr_output_damage_add_box(output->damage, &box);
+}
+
+void output_damage_whole_view(ti::view *view, ti::output *output) {
+
+  damage_whole_decoration(view, output);
+
+  bool whole = true;
+  output_view_for_each_surface(output, view, damage_surface_iterator, &whole);
+}
+
 /* This function is called every time an output is ready to display a frame,
  * generally at the output's refresh rate (e.g. 60Hz). */
 static void output_frame(struct wl_listener *listener, void *data) {
-  float color[4] = {0.3, 0.3, 0.3, 1.0};
+  float color[] = {0.3, 0.3, 0.3, 1.0};
+
   enum wl_output_transform transform = WL_OUTPUT_TRANSFORM_NORMAL;
   ti::output *output = wl_container_of(listener, output, frame);
   struct wlr_renderer *renderer = output->server->renderer;
@@ -57,6 +222,11 @@ static void output_frame(struct wl_listener *listener, void *data) {
   /* Begin the renderer (calls glViewport and some other GL sanity checks) */
   wlr_renderer_begin(renderer, width, height);
 
+  if (!pixman_region32_not_empty(&buffer_damage)) {
+    // Output isn't damaged but needs buffer swap
+    goto renderer_end;
+  }
+
   for (int i = 0; i < nrects; ++i) {
     scissor_output(output->wlr_output, &rects[i]);
     wlr_renderer_clear(renderer, color);
@@ -75,6 +245,8 @@ static void output_frame(struct wl_listener *listener, void *data) {
     rdata.view = view;
     rdata.when = &now;
 
+    render_decorations(output, view, &rdata);
+
     switch (view->type) {
     case ti::XDG_SHELL_VIEW: {
       /* This calls our render_surface function for each surface among the
@@ -88,13 +260,13 @@ static void output_frame(struct wl_listener *listener, void *data) {
       // render_surface(view->xwayland_surface->surface, 0, 0, &rdata);
       ti::xwayland_view *v = dynamic_cast<ti::xwayland_view *>(view);
 
-      render_decorations(output, v, &rdata);
       wlr_surface_for_each_surface(v->surface, render_surface, &rdata);
       break;
     }
     }
   }
 
+renderer_end:
   /* Hardware cursors are rendered by the GPU on a separate plane, and can be
    * moved around without re-rendering what's beneath them - which is more
    * efficient. However, not all hardware supports hardware cursors. For this
@@ -116,6 +288,7 @@ static void output_frame(struct wl_listener *listener, void *data) {
   transform = wlr_output_transform_invert(output->wlr_output->transform);
   wlr_region_transform(&frame_damage, &output->damage->current, transform,
                        width, height);
+
   wlr_output_set_damage(output->wlr_output, &frame_damage);
   pixman_region32_fini(&frame_damage);
 
@@ -181,9 +354,9 @@ void ti::output::get_decoration_box(ti::view &view, struct wlr_box &box) {
   view.get_deco_box(deco_box);
   double sx = deco_box.x - view.box.x;
   double sy = deco_box.y - view.box.y;
-  // rotate_child_position(&sx, &sy, deco_box.width, deco_box.height,
-  //                       view->wlr_surface->current.width,
-  //                       view->wlr_surface->current.height, view->rotation);
+  rotate_child_position(&sx, &sy, deco_box.width, deco_box.height,
+                        view.surface->current.width,
+                        view.surface->current.height, view.rotation);
   double x = sx + view.box.x;
   double y = sy + view.box.y;
 
