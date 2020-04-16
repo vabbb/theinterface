@@ -117,3 +117,37 @@ void ti::view::update_position(int32_t __x, int32_t __y) {
   box.y = __y;
   ti::view::damage_whole();
 }
+
+void ti::view::begin_interactive(ti::cursor_mode mode, uint32_t edges) {
+  if (surface != server->seat->pointer_state.focused_surface) {
+    /* Deny move/resize requests from unfocused clients. */
+    return;
+  }
+  server->grabbed_view = this;
+  server->cursor_mode = mode;
+  struct wlr_box geo_box;
+  switch (type) {
+  case ti::XDG_SHELL_VIEW: {
+    ti::xdg_view *v = dynamic_cast<ti::xdg_view *>(this);
+    wlr_xdg_surface_get_geometry(v->xdg_surface, &geo_box);
+    break;
+  }
+  case ti::XWAYLAND_VIEW: {
+    ti::xwayland_view *v = dynamic_cast<ti::xwayland_view *>(this);
+    geo_box.width = v->xwayland_surface->width;
+    geo_box.height = v->xwayland_surface->height;
+    break;
+  }
+  }
+
+  if (mode == ti::CURSOR_MOVE) {
+    server->grab_x = server->cursor->x - box.x;
+    server->grab_y = server->cursor->y - box.y;
+  } else {
+    server->grab_x = server->cursor->x;
+    server->grab_y = server->cursor->y;
+  }
+  server->grab_width = geo_box.width;
+  server->grab_height = geo_box.height;
+  server->resize_edges = edges;
+}

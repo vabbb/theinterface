@@ -12,6 +12,8 @@ extern "C" {
 #include <wlr/types/wlr_surface.h>
 }
 
+#include "cursor.hpp"
+
 namespace ti {
 enum view_type {
   XDG_SHELL_VIEW,
@@ -73,6 +75,11 @@ public:
   void for_each_surface(wlr_surface_iterator_func_t iterator, void *user_data);
   void damage_whole();
   void update_position(int32_t __x, int32_t __y);
+
+  /** This function sets up an interactive move or resize operation, where the
+   * compositor stops propegating pointer events to clients and instead consumes
+   * them itself, to move or resize windows. */
+  void begin_interactive(ti::cursor_mode mode, uint32_t edges);
 };
 } // namespace ti
 

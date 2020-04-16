@@ -10,6 +10,20 @@ extern "C" {
 
 #ifdef WLR_HAS_XWAYLAND
 
+static void handle_request_move(struct wl_listener *listener, void *data) {
+  ti::xwayland_view *xwayland_view =
+      wl_container_of(listener, xwayland_view, request_move);
+  xwayland_view->begin_interactive(ti::CURSOR_MOVE, 0);
+}
+
+static void handle_request_resize(struct wl_listener *listener, void *data) {
+  struct wlr_xwayland_resize_event *event =
+      (struct wlr_xwayland_resize_event *)(data);
+  ti::xwayland_view *xwayland_view =
+      wl_container_of(listener, xwayland_view, request_resize);
+  xwayland_view->begin_interactive(ti::CURSOR_RESIZE, event->edges);
+}
+
 static void handle_xwayland_surface_commit(struct wl_listener *listener,
                                            void *data) {
   ti::xwayland_view *view = wl_container_of(listener, view, commit);
@@ -37,10 +51,10 @@ static void handle_xwayland_surface_map(struct wl_listener *listener,
     return;
   }
 
-  view->box.x = xwayland_surface->x;
-  view->box.y = xwayland_surface->y;
-  view->box.width = xwayland_surface->surface->current.width;
-  view->box.height = xwayland_surface->surface->current.height;
+  // view->box.x = xwayland_surface->x;
+  // view->box.y = xwayland_surface->y;
+  view->box.width = xwayland_surface->width;
+  view->box.height = xwayland_surface->height;
   view->surface = xwayland_surface->surface;
 
   view->pid = xwayland_surface->pid;
@@ -137,8 +151,8 @@ void handle_new_xwayland_surface(struct wl_listener *listener, void *data) {
   /* Allocate a ti::view for this surface */
   ti::xwayland_view *view = new ti::xwayland_view;
   view->server = server;
-  view->box.x = xwayland_surface->x;
-  view->box.y = xwayland_surface->y;
+  // view->box.x = xwayland_surface->x;
+  // view->box.y = xwayland_surface->y;
   view->xwayland_surface = xwayland_surface;
 
   /* Listen to the various events it can emit */
@@ -155,6 +169,11 @@ void handle_new_xwayland_surface(struct wl_listener *listener, void *data) {
   wl_signal_add(&xwayland_surface->events.request_configure,
                 &view->request_configure);
 
+  view->request_move.notify = handle_request_move;
+  wl_signal_add(&xwayland_surface->events.request_move, &view->request_move);
+  view->request_resize.notify = handle_request_resize;
+  wl_signal_add(&xwayland_surface->events.request_resize,
+                &view->request_resize);
   /* cotd */
   //   struct wlr_xdg_toplevel *toplevel = xwayland_surface->toplevel;
   //   view->request_move.notify = xdg_toplevel_request_move;

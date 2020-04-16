@@ -8,34 +8,6 @@ extern "C" {
 
 #include "xdg_shell.hpp"
 
-/** This function sets up an interactive move or resize operation, where the
- * compositor stops propegating pointer events to clients and instead
- * consumes them itself, to move or resize windows. */
-static void begin_interactive(ti::xdg_view *view, ti::cursor_mode mode,
-                              uint32_t edges) {
-  ti::server *server = view->server;
-  struct wlr_surface *focused_surface =
-      server->seat->pointer_state.focused_surface;
-  if (view->xdg_surface->surface != focused_surface) {
-    /* Deny move/resize requests from unfocused clients. */
-    return;
-  }
-  server->grabbed_view = view;
-  server->cursor_mode = mode;
-  struct wlr_box geo_box;
-  wlr_xdg_surface_get_geometry(view->xdg_surface, &geo_box);
-  if (mode == ti::CURSOR_MOVE) {
-    server->grab_x = server->cursor->x - view->box.x;
-    server->grab_y = server->cursor->y - view->box.y;
-  } else {
-    server->grab_x = server->cursor->x + geo_box.x;
-    server->grab_y = server->cursor->y + geo_box.y;
-  }
-  server->grab_width = geo_box.width;
-  server->grab_height = geo_box.height;
-  server->resize_edges = edges;
-}
-
 /** Called when the surface is mapped, or ready to display on-screen. */
 static void handle_xdg_surface_map(struct wl_listener *listener, void *data) {
   ti::xdg_view *view = wl_container_of(listener, view, map);
@@ -83,7 +55,7 @@ static void handle_xdg_surface_destroy(struct wl_listener *listener,
 static void handle_xdg_toplevel_request_move(struct wl_listener *listener,
                                              void *data) {
   ti::xdg_view *view = wl_container_of(listener, view, request_move);
-  begin_interactive(view, ti::CURSOR_MOVE, 0);
+  view->begin_interactive(ti::CURSOR_MOVE, 0);
 }
 
 /** This event is raised when a client would like to begin an interactive
@@ -96,7 +68,7 @@ static void handle_xdg_toplevel_request_resize(struct wl_listener *listener,
   struct wlr_xdg_toplevel_resize_event *event =
       (struct wlr_xdg_toplevel_resize_event *)(data);
   ti::xdg_view *view = wl_container_of(listener, view, request_resize);
-  begin_interactive(view, ti::CURSOR_RESIZE, event->edges);
+  view->begin_interactive(ti::CURSOR_RESIZE, event->edges);
 }
 
 void handle_new_xdg_surface(struct wl_listener *listener, void *data) {

@@ -94,7 +94,8 @@ static void process_cursor_resize(ti::server *server, uint32_t time) {
   }
   case ti::XWAYLAND_VIEW: {
     ti::xwayland_view *v = dynamic_cast<ti::xwayland_view *>(view);
-    /// TODO:
+    wlr_xwayland_surface_configure(v->xwayland_surface, x, y, width,
+                                   height);
     break;
   }
   }
