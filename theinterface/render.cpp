@@ -13,11 +13,74 @@ extern "C" {
 #include "server.hpp"
 #include "xdg_shell.hpp"
 
+void scissor_output(struct wlr_output *wlr_output, pixman_box32_t *rect) {
+  struct wlr_renderer *renderer = wlr_backend_get_renderer(wlr_output->backend);
+  // assert(renderer);
+
+  struct wlr_box box = {
+      .x = rect->x1,
+      .y = rect->y1,
+      .width = rect->x2 - rect->x1,
+      .height = rect->y2 - rect->y1,
+  };
+
+  int ow, oh;
+  wlr_output_transformed_resolution(wlr_output, &ow, &oh);
+
+  enum wl_output_transform transform =
+      wlr_output_transform_invert(wlr_output->transform);
+  wlr_box_transform(&box, &box, transform, ow, oh);
+
+  wlr_renderer_scissor(renderer, &box);
+}
+
+void render_decorations(ti::output *output, ti::view *view,
+                        ti::render_data *data) {
+  float color[4] = {0.2, 0.2, 0.2, 1.0}; // view->alpha};
+  pixman_box32_t *rects;
+  if (!view->decorated || view->surface == NULL) {
+    return;
+  }
+
+  struct wlr_renderer *renderer =
+      wlr_backend_get_renderer(output->wlr_output->backend);
+
+  struct wlr_box box;
+  output->get_decoration_box(*view, box);
+
+  struct wlr_box rotated;
+  wlr_box_rotated_bounds(&rotated, &box, view->rotation);
+
+  pixman_region32_t damage;
+  pixman_region32_init(&damage);
+  pixman_region32_union_rect(&damage, &damage, rotated.x, rotated.y,
+                             rotated.width, rotated.height);
+  pixman_region32_intersect(&damage, &damage, &damage); // data->damage);
+  bool damaged = pixman_region32_not_empty(&damage);
+  if (!damaged) {
+    goto buffer_damage_finish;
+  }
+
+  float matrix[9];
+  wlr_matrix_project_box(matrix, &box, WL_OUTPUT_TRANSFORM_NORMAL,
+                         view->rotation, output->wlr_output->transform_matrix);
+
+  int nrects;
+  rects = pixman_region32_rectangles(&damage, &nrects);
+  for (int i = 0; i < nrects; ++i) {
+    scissor_output(output->wlr_output, &rects[i]);
+    wlr_render_quad_with_matrix(renderer, color, matrix);
+  }
+
+buffer_damage_finish:
+  pixman_region32_fini(&damage);
+}
+
 /** This function is called for every surface that needs to be rendered.
  * Assumes surface is not NULL
  */
 void render_surface(struct wlr_surface *surface, int sx, int sy, void *data) {
-  struct render_data *rdata = (struct render_data *)data;
+  ti::render_data *rdata = reinterpret_cast<ti::render_data *>(data);
   ti::view *view = rdata->view;
   struct wlr_output *output = rdata->output;
 
@@ -73,3 +136,5 @@ void render_surface(struct wlr_surface *surface, int sx, int sy, void *data) {
    * prepare another one now if it likes. */
   wlr_surface_send_frame_done(surface, rdata->when);
 }
+
+ti::render_data::render_data() {}

@@ -7,6 +7,7 @@
 
 extern "C" {
 #define static
+// for some reason wlr/xwayland.h is using "class" as a variable name 🤷
 #define class c_class
 #include <wlr/xwayland.h>
 #undef class

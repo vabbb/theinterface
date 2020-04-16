@@ -1,8 +1,6 @@
 #ifndef TI_XDG_SHELL_HPP
 #define TI_XDG_SHELL_HPP
 
-#include "cursor.hpp"
-#include "server.hpp"
 #include "view.hpp"
 
 namespace ti {

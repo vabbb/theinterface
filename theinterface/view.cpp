@@ -1,11 +1,16 @@
-#include "view.hpp"
 #include "output.hpp"
 #include "xdg_shell.hpp"
 #include "xwayland.hpp"
 
+#include "view.hpp"
+
 // mapped is false, so we only map it when the view is ready
 ti::view::view(enum view_type t)
-    : x(0), y(0), mapped(false), was_ever_mapped(false), type(t) {}
+    : type(t), mapped(false), was_ever_mapped(false), x(0), y(0),
+      decorated(false), alpha(1.0f), title("(nil)") {}
+ti::view::view(enum view_type t, uint32_t _x, uint32_t _y)
+    : type(t), mapped(false), was_ever_mapped(false), x(_x), y(_y),
+      decorated(false), alpha(1.0f), title("(nil)") {}
 ti::view::~view() {}
 
 void ti::view::focus(struct wlr_surface *surface) {
@@ -64,4 +69,23 @@ void ti::view::focus(struct wlr_surface *surface) {
    */
   wlr_seat_keyboard_notify_enter(server->seat, surf, keyboard->keycodes,
                                  keyboard->num_keycodes, &keyboard->modifiers);
+}
+
+void ti::view::get_box(wlr_box &_box) {
+  _box.x = box.x;
+  _box.y = box.y;
+  _box.width = box.width;
+  _box.height = box.height;
+}
+
+void ti::view::get_deco_box(wlr_box &_box) {
+  ti::view::get_box(_box);
+  if (!decorated) {
+    return;
+  }
+
+  _box.x -= border_width;
+  _box.y -= (border_width + titlebar_height);
+  _box.width += border_width * 2;
+  _box.height += (border_width * 2 + titlebar_height);
 }

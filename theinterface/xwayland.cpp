@@ -37,7 +37,12 @@ static void handle_xwayland_surface_map(struct wl_listener *listener,
     return;
   }
 
+  view->box.x = xwayland_surface->x;
+  view->box.y = xwayland_surface->y;
+  view->box.width = xwayland_surface->surface->current.width;
+  view->box.height = xwayland_surface->surface->current.height;
   view->surface = xwayland_surface->surface;
+
   view->pid = xwayland_surface->pid;
   view->mapped = true;
 
@@ -69,6 +74,7 @@ static void handle_xwayland_surface_unmap(struct wl_listener *listener,
                                           void *data) {
   ti::xwayland_view *view = wl_container_of(listener, view, unmap);
   view->mapped = false;
+  view->box.width = view->box.height = 0;
   if (view->toplevel_handle) {
     wlr_foreign_toplevel_handle_v1_destroy(view->toplevel_handle);
     view->toplevel_handle = NULL;
@@ -126,6 +132,8 @@ void handle_new_xwayland_surface(struct wl_listener *listener, void *data) {
   /* Allocate a ti::view for this surface */
   ti::xwayland_view *view = new ti::xwayland_view;
   view->server = server;
+  view->box.x = xwayland_surface->x;
+  view->box.y = xwayland_surface->y;
   view->xwayland_surface = xwayland_surface;
 
   /* Listen to the various events it can emit */
