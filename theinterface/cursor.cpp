@@ -66,7 +66,7 @@ static void process_cursor_resize(ti::server *server, uint32_t time) {
   int width = server->grab_width;
   int height = server->grab_height;
   if (server->resize_edges & WLR_EDGE_TOP) {
-    y = server->grab_y + dy;
+    y = server->view_y + dy;
     height -= dy;
     if (height < 1) {
       y += height;
@@ -75,7 +75,7 @@ static void process_cursor_resize(ti::server *server, uint32_t time) {
     height += dy;
   }
   if (server->resize_edges & WLR_EDGE_LEFT) {
-    x = server->grab_x + dx;
+    x = server->view_x + dx;
     width -= dx;
     if (width < 1) {
       x += width;
@@ -83,8 +83,11 @@ static void process_cursor_resize(ti::server *server, uint32_t time) {
   } else if (server->resize_edges & WLR_EDGE_RIGHT) {
     width += dx;
   }
-  view->box.x = x;
-  view->box.y = y;
+
+  view->box = {.x = (int32_t)x,
+               .y = (int32_t)y,
+               .width = (int32_t)width,
+               .height = (int32_t)height};
 
   switch (view->type) {
   case ti::XDG_SHELL_VIEW: {
@@ -94,8 +97,7 @@ static void process_cursor_resize(ti::server *server, uint32_t time) {
   }
   case ti::XWAYLAND_VIEW: {
     ti::xwayland_view *v = dynamic_cast<ti::xwayland_view *>(view);
-    wlr_xwayland_surface_configure(v->xwayland_surface, x, y, width,
-                                   height);
+    wlr_xwayland_surface_configure(v->xwayland_surface, x, y, width, height);
     break;
   }
   }

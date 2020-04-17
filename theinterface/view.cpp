@@ -140,6 +140,9 @@ void ti::view::begin_interactive(ti::cursor_mode mode, uint32_t edges) {
   }
   }
 
+  server->view_x = box.x;
+  server->view_y = box.y;
+
   if (mode == ti::CURSOR_MOVE) {
     server->grab_x = server->cursor->x - box.x;
     server->grab_y = server->cursor->y - box.y;
