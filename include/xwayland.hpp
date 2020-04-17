@@ -26,9 +26,6 @@ public:
 
   std::string get_title() override;
 
-  /// ti::view->xwayland_surface->surface;
-  struct wlr_surface *get_wlr_surface();
-
   xwayland_view();
   ~xwayland_view();
 };

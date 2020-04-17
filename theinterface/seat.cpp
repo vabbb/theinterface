@@ -30,7 +30,7 @@ bool view_at(ti::view *view, double lx, double ly, struct wlr_surface **surface,
   double view_sy = ly - view->box.y;
 
   double _sx, _sy;
-  struct wlr_surface *_surface = NULL;
+  struct wlr_surface *_surface = nullptr;
 
   switch (view->type) {
   case ti::XDG_SHELL_VIEW: {
@@ -42,13 +42,10 @@ bool view_at(ti::view *view, double lx, double ly, struct wlr_surface **surface,
   }
   case ti::XWAYLAND_VIEW: {
     ti::xwayland_view *v = dynamic_cast<ti::xwayland_view *>(view);
-    if (v->get_wlr_surface()) {
-      _surface = wlr_surface_surface_at(v->get_wlr_surface(), view_sx, view_sy,
-                                        &_sx, &_sy);
+    if (v->surface) {
+      _surface =
+          wlr_surface_surface_at(v->surface, view_sx, view_sy, &_sx, &_sy);
     }
-    break;
-  }
-  default: {
     break;
   }
   }

@@ -85,10 +85,9 @@ void handle_new_xdg_surface(struct wl_listener *listener, void *data) {
   view->server = server;
   view->xdg_surface = xdg_surface;
   view->surface = xdg_surface->surface;
-  view->box.x = xdg_surface->geometry.x;
-  view->box.y = xdg_surface->geometry.y;
-  view->box.width = xdg_surface->geometry.width;
-  view->box.height = xdg_surface->geometry.height;
+
+  // box.x and box.y are the coordinates at which the view is displayed
+  wlr_xdg_surface_get_geometry(xdg_surface, &view->box);
 
   // Find out the client's pid
   // ONLY WORKS WITH WAYLAND SURFACES!! DOESNT WORK WITH XWAYLAND

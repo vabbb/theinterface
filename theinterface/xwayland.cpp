@@ -51,8 +51,6 @@ static void handle_xwayland_surface_map(struct wl_listener *listener,
     return;
   }
 
-  // view->box.x = xwayland_surface->x;
-  // view->box.y = xwayland_surface->y;
   view->box.width = xwayland_surface->width;
   view->box.height = xwayland_surface->height;
   view->surface = xwayland_surface->surface;
@@ -151,8 +149,6 @@ void handle_new_xwayland_surface(struct wl_listener *listener, void *data) {
   /* Allocate a ti::view for this surface */
   ti::xwayland_view *view = new ti::xwayland_view;
   view->server = server;
-  // view->box.x = xwayland_surface->x;
-  // view->box.y = xwayland_surface->y;
   view->xwayland_surface = xwayland_surface;
 
   /* Listen to the various events it can emit */
@@ -174,12 +170,6 @@ void handle_new_xwayland_surface(struct wl_listener *listener, void *data) {
   view->request_resize.notify = handle_request_resize;
   wl_signal_add(&xwayland_surface->events.request_resize,
                 &view->request_resize);
-  /* cotd */
-  //   struct wlr_xdg_toplevel *toplevel = xwayland_surface->toplevel;
-  //   view->request_move.notify = xdg_toplevel_request_move;
-  //   wl_signal_add(&toplevel->events.request_move, &view->request_move);
-  //   view->request_resize.notify = xdg_toplevel_request_resize;
-  //   wl_signal_add(&toplevel->events.request_resize, &view->request_resize);
 
   /* Add it to the list of views. */
   ti::view *v = dynamic_cast<ti::view *>(view);
@@ -188,10 +178,6 @@ void handle_new_xwayland_surface(struct wl_listener *listener, void *data) {
 
 std::string ti::xwayland_view::get_title() {
   return this->xwayland_surface->title;
-}
-
-struct wlr_surface *ti::xwayland_view::get_wlr_surface() {
-  return xwayland_surface->surface;
 }
 
 ti::xwayland_view::xwayland_view() : view(ti::XWAYLAND_VIEW, 50, 50) {}
