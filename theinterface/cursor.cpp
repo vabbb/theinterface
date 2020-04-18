@@ -44,8 +44,10 @@ void handle_new_input(struct wl_listener *listener, void *data) {
 
 /* Move the grabbed view to the new position. */
 static void process_cursor_move(ti::server *server, uint32_t time) {
+  server->grabbed_view->damage_whole();
   server->grabbed_view->box.x = server->cursor->x - server->grab_x;
   server->grabbed_view->box.y = server->cursor->y - server->grab_y;
+  server->grabbed_view->damage_whole();
 }
 
 /** Resizing the grabbed view can be a little bit complicated, because we
@@ -84,6 +86,7 @@ static void process_cursor_resize(ti::server *server, uint32_t time) {
     width += dx;
   }
 
+  view->damage_whole();
   view->box = {.x = (int32_t)x,
                .y = (int32_t)y,
                .width = (int32_t)width,
@@ -101,6 +104,7 @@ static void process_cursor_resize(ti::server *server, uint32_t time) {
     break;
   }
   }
+  view->damage_whole();
 }
 
 static void process_cursor_motion(ti::server *server, uint32_t time) {
@@ -192,18 +196,8 @@ void handle_cursor_button(struct wl_listener *listener, void *data) {
       // unfocus();
       return;
     }
-    switch (view->type) {
-    case ti::XDG_SHELL_VIEW: {
-      ti::xdg_view *v = dynamic_cast<ti::xdg_view *>(view);
-      v->focus(surface);
-      break;
-    }
-    case ti::XWAYLAND_VIEW: {
-      ti::xwayland_view *v = dynamic_cast<ti::xwayland_view *>(view);
-      v->focus(surface);
-      break;
-    }
-    }
+    // focus view when you click on it
+    view->focus();
   }
 }
 

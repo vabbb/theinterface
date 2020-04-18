@@ -22,22 +22,24 @@ enum view_type {
 #endif
 };
 
+struct render_data;
+
 /// view interface
 class view {
 public:
   const enum view_type type;
-  bool mapped, was_ever_mapped;
+  bool mapped = false, was_ever_mapped = false;
   uint32_t border_width, titlebar_height;
-  bool decorated;
+  bool decorated = false;
 
   struct wlr_box box;
-  float rotation;
-  float alpha;
+  float rotation = 0.0;
+  float alpha = 1.0;
 
-  bool maximized;
-  struct output *fullscreen_output;
+  bool maximized = false;
+  struct output *fullscreen_output = nullptr;
 
-  std::string title;
+  std::string title = "(nil)";
   pid_t pid;
   uid_t uid;
   gid_t gid;
@@ -71,10 +73,19 @@ public:
   void get_box(wlr_box &box);
   void get_deco_box(wlr_box &box);
   virtual std::string get_title() = 0;
-  void focus(struct wlr_surface *surface);
-  void for_each_surface(wlr_surface_iterator_func_t iterator, void *user_data);
+
+  /** NOTE: this function only deals with keyboard focus. */
+  void focus();
+
+  virtual void for_each_surface(wlr_surface_iterator_func_t iterator,
+                                void *user_data) = 0;
   void damage_whole();
+  void damage_partial();
   void update_position(int32_t __x, int32_t __y);
+  void render_decorations(ti::output *output, ti::render_data *rdata);
+  void render(ti::output *output, ti::render_data *data);
+  virtual void activate() = 0;
+  virtual void deactivate() = 0;
 
   /** This function sets up an interactive move or resize operation, where the
    * compositor stops propegating pointer events to clients and instead consumes

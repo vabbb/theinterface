@@ -153,6 +153,8 @@ ti::server::server() {
    * startup command if requested. */
   setenv("WAYLAND_DISPLAY", socket, true);
   wlr_log(WLR_INFO, "Running TheInterface on WAYLAND_DISPLAY=%s", socket);
+
+  presentation = wlr_presentation_create(display, backend);
 }
 
 /// automatically ran when the program is about to exit

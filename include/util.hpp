@@ -22,5 +22,5 @@ inline int safe_kill(pid_t __pid, int __sig) {
   return __pid != 0 ? kill(__pid, __sig) : EXIT_FAILURE;
 }
 
-void fp3s_counter(const timespec& now);
+void fps_counter(const timespec &now);
 #endif

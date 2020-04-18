@@ -5,6 +5,7 @@ extern "C" {
 #include <wlr/backend.h>
 #include <wlr/config.h>
 #include <wlr/types/wlr_foreign_toplevel_management_v1.h>
+#include <wlr/types/wlr_presentation_time.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/types/wlr_xdg_shell.h>
 }
@@ -13,10 +14,11 @@ extern "C" {
 #include "xwayland.hpp"
 #endif
 
-#include "cursor.hpp"
-#include "view.hpp"
-
 namespace ti {
+
+class view;
+enum cursor_mode;
+
 class server {
 public:
   struct wl_display *display;
@@ -55,6 +57,8 @@ public:
   struct wl_list keyboards;
   enum ti::cursor_mode cursor_mode;
 
+  class view *focused_view;
+
   class view *grabbed_view;
   double grab_x, grab_y;
   int grab_width, grab_height;
@@ -73,6 +77,8 @@ public:
    * opportunity to do libinput configuration on the device to set
    * acceleration, etc. */
   void new_pointer(struct wlr_input_device *device);
+
+  struct wlr_presentation *presentation;
 };
 } // namespace ti
 

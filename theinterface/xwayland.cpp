@@ -27,7 +27,7 @@ static void handle_request_resize(struct wl_listener *listener, void *data) {
 static void handle_xwayland_surface_commit(struct wl_listener *listener,
                                            void *data) {
   ti::xwayland_view *view = wl_container_of(listener, view, commit);
-  // view_damage_part(view);
+  view->damage_partial();
 }
 
 static void handle_xwayland_surface_map(struct wl_listener *listener,
@@ -36,12 +36,6 @@ static void handle_xwayland_surface_map(struct wl_listener *listener,
   struct wlr_xwayland_surface *xwayland_surface =
       reinterpret_cast<struct wlr_xwayland_surface *>(data);
 
-  if (view->was_ever_mapped == false) {
-    view->was_ever_mapped = true;
-    ti::xwayland_view *v = dynamic_cast<ti::xwayland_view *>(view);
-    wl_list_insert(&view->server->wem_views, &v->wem_link);
-  }
-
   if (xwayland_surface->override_redirect) {
     // This window used not to have the override redirect flag and has it
     // now. Switch to unmanaged.
@@ -49,6 +43,12 @@ static void handle_xwayland_surface_map(struct wl_listener *listener,
     xwayland_surface->data = NULL;
     /// TODO: create unmanaged view and map it
     return;
+  }
+
+  if (view->was_ever_mapped == false) {
+    view->was_ever_mapped = true;
+    ti::xwayland_view *v = dynamic_cast<ti::xwayland_view *>(view);
+    wl_list_insert(&view->server->wem_views, &v->wem_link);
   }
 
   view->box.width = xwayland_surface->width;
@@ -76,10 +76,12 @@ static void handle_xwayland_surface_map(struct wl_listener *listener,
   view->commit.notify = handle_xwayland_surface_commit;
   wl_signal_add(&view->xwayland_surface->surface->events.commit, &view->commit);
 
-  view->damage_whole();
-
   if (wlr_xwayland_or_surface_wants_focus(view->xwayland_surface)) {
-    view->focus(view->surface);
+    view->focus();
+  } else {
+    // focus would damage the view. If the view doesn't want focus, we damage it
+    // anyway
+    view->damage_whole();
   }
 }
 
@@ -90,12 +92,11 @@ static void handle_xwayland_surface_unmap(struct wl_listener *listener,
   view->mapped = false;
   view->box.width = view->box.height = 0;
 
-  view->damage_whole();
-
   if (view->toplevel_handle) {
     wlr_foreign_toplevel_handle_v1_destroy(view->toplevel_handle);
     view->toplevel_handle = NULL;
   }
+  view->damage_whole();
 }
 
 /** Called when the surface is destroyed and should never be shown again. */
@@ -178,6 +179,19 @@ void handle_new_xwayland_surface(struct wl_listener *listener, void *data) {
 
 std::string ti::xwayland_view::get_title() {
   return this->xwayland_surface->title;
+}
+
+void ti::xwayland_view::for_each_surface(wlr_surface_iterator_func_t iterator,
+                                         void *user_data) {
+  wlr_surface_for_each_surface(surface, iterator, user_data);
+}
+
+void ti::xwayland_view::activate() {
+  wlr_xwayland_surface_activate(xwayland_surface, true);
+}
+
+void ti::xwayland_view::deactivate() {
+  wlr_xwayland_surface_activate(xwayland_surface, false);
 }
 
 ti::xwayland_view::xwayland_view() : view(ti::XWAYLAND_VIEW, 50, 50) {}

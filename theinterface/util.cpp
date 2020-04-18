@@ -110,13 +110,13 @@ bool possible_no_hardware_cursor_support() {
   return false;
 }
 
-void fp3s_counter(const timespec& now) {
+void fps_counter(const timespec &now) {
   static uint32_t frames_last_second;
   static time_t last_checkpoint;
   ++frames_last_second;
   if (now.tv_sec > 0 && now.tv_sec > last_checkpoint) {
     last_checkpoint = now.tv_sec;
-    wlr_log(WLR_DEBUG, "FPS = %ld", frames_last_second);
+    wlr_log(WLR_INFO, "FPS = %ld", frames_last_second);
     frames_last_second = 0;
   }
 }

@@ -54,7 +54,7 @@ static bool ti_alt_tab(ti::server *server, uint32_t keysym) {
       wl_container_of(server->wem_views.next, current_view, wem_link);
   ti::view *next_view =
       wl_container_of(current_view->wem_link.next, next_view, wem_link);
-  next_view->focus(next_view->surface);
+  next_view->focus();
   /* Move the previous view to the end of the list */
   wl_list_remove(&current_view->wem_link);
   wl_list_insert(server->wem_views.prev, &current_view->wem_link);
@@ -70,7 +70,7 @@ static bool ti_alt_f4(ti::server *server, uint32_t keysym) {
   if (wl_list_length(&server->wem_views) > 1) {
     ti::view *next_view =
         wl_container_of(current_view->wem_link.next, next_view, wem_link);
-    next_view->focus(next_view->surface);
+    next_view->focus();
   }
 
   return safe_kill(current_view->pid, SIGKILL);

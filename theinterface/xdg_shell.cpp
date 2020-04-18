@@ -8,6 +8,12 @@ extern "C" {
 
 #include "xdg_shell.hpp"
 
+static void handle_xdg_surface_commit(struct wl_listener *listener,
+                                      void *data) {
+  ti::xdg_view *view = wl_container_of(listener, view, surface_commit);
+  view->damage_partial();
+}
+
 /** Called when the surface is mapped, or ready to display on-screen. */
 static void handle_xdg_surface_map(struct wl_listener *listener, void *data) {
   ti::xdg_view *view = wl_container_of(listener, view, map);
@@ -20,7 +26,7 @@ static void handle_xdg_surface_map(struct wl_listener *listener, void *data) {
     ti::view *v = dynamic_cast<ti::view *>(view);
     wl_list_insert(&view->server->wem_views, &v->wem_link);
   }
-  view->focus(view->surface);
+  view->focus();
 }
 
 /** Called when the surface is unmapped, and should no longer be shown. */
@@ -31,6 +37,7 @@ static void handle_xdg_surface_unmap(struct wl_listener *listener, void *data) {
     wlr_foreign_toplevel_handle_v1_destroy(view->toplevel_handle);
     view->toplevel_handle = NULL;
   }
+  view->damage_whole();
 }
 
 /* Called when the surface is destroyed and should never be shown again. */
@@ -103,6 +110,9 @@ void handle_new_xdg_surface(struct wl_listener *listener, void *data) {
   view->destroy.notify = handle_xdg_surface_destroy;
   wl_signal_add(&xdg_surface->events.destroy, &view->destroy);
 
+  view->surface_commit.notify = handle_xdg_surface_commit;
+  wl_signal_add(&xdg_surface->surface->events.commit, &view->surface_commit);
+
   /* cotd */
   struct wlr_xdg_toplevel *toplevel = xdg_surface->toplevel;
   view->request_move.notify = handle_xdg_toplevel_request_move;
@@ -119,5 +129,20 @@ std::string ti::xdg_view::get_title() {
   return this->xdg_surface->toplevel->title;
 }
 
+void ti::xdg_view::for_each_surface(wlr_surface_iterator_func_t iterator,
+                                    void *user_data) {
+  wlr_xdg_surface_for_each_surface(xdg_surface, iterator, user_data);
+}
+
+void ti::xdg_view::activate() {
+  if (xdg_surface->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL) {
+    wlr_xdg_toplevel_set_activated(xdg_surface, true);
+  }
+}
+void ti::xdg_view::deactivate() {
+  if (xdg_surface->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL) {
+    wlr_xdg_toplevel_set_activated(xdg_surface, false);
+  }
+}
 ti::xdg_view::xdg_view() : view(ti::XDG_SHELL_VIEW) {}
 ti::xdg_view::~xdg_view() {}

@@ -67,7 +67,11 @@ static bool get_surface_box(struct surface_iterator_data *data,
   struct wlr_box rotated_box;
   wlr_box_rotated_bounds(&rotated_box, &box, data->rotation);
 
-  struct wlr_box output_box;
+  // "= {}" initializes every member of the struct with the "default"
+  // constructor, which will set every variable to "0 of the appropriate type".
+  // We need this because the C version assumes .x and .y to be 0, whereas C++
+  // can't make any assumptions
+  struct wlr_box output_box = {};
   wlr_output_effective_resolution(output->wlr_output, &output_box.width,
                                   &output_box.height);
 
@@ -89,11 +93,11 @@ static void output_for_each_surface_iterator(struct wlr_surface *surface,
                       data->user_data);
 }
 
-void output_view_for_each_surface(ti::output *output, ti::view *view,
-                                  ti_surface_iterator_func_t iterator,
-                                  void *user_data) {
-  struct wlr_box *output_box = wlr_output_layout_get_box(
-      output->server->output_layout, output->wlr_output);
+void ti::output::view_for_each_surface(ti::view *view,
+                                       ti_surface_iterator_func_t iterator,
+                                       void *user_data) {
+  struct wlr_box *output_box =
+      wlr_output_layout_get_box(server->output_layout, wlr_output);
   if (!output_box) {
     return;
   }
@@ -101,7 +105,7 @@ void output_view_for_each_surface(ti::output *output, ti::view *view,
   struct surface_iterator_data data = {
       .user_iterator = iterator,
       .user_data = user_data,
-      .output = output,
+      .output = this,
       .ox = (double)(view->box.x - output_box->x),
       .oy = (double)(view->box.y - output_box->y),
       .width = view->box.width,
@@ -174,59 +178,64 @@ static void damage_whole_decoration(ti::view *view, ti::output *output) {
   wlr_output_damage_add_box(output->damage, &box);
 }
 
-void output_damage_whole_view(ti::view *view, ti::output *output) {
-
-  damage_whole_decoration(view, output);
-
-  bool whole = true;
-  output_view_for_each_surface(output, view, damage_surface_iterator, &whole);
+static void surface_send_frame_done_iterator(ti::output *output,
+                                             struct wlr_surface *surface,
+                                             struct wlr_box *box,
+                                             float rotation, void *data) {
+  struct timespec *when = reinterpret_cast<struct timespec *>(data);
+  wlr_surface_send_frame_done(surface, when);
 }
 
 /* This function is called every time an output is ready to display a frame,
  * generally at the output's refresh rate (e.g. 60Hz). */
 static void output_frame(struct wl_listener *listener, void *data) {
-  float color[] = {0.3, 0.3, 0.3, 1.0};
+  int nrects;
+  pixman_box32_t *rects = nullptr;
+  int width, height;
+  const float color[] = {0.4, 0.4, 0.4, 1.0};
 
-  enum wl_output_transform transform = WL_OUTPUT_TRANSFORM_NORMAL;
+  enum wl_output_transform transform;
   ti::output *output = wl_container_of(listener, output, frame);
   struct wlr_renderer *renderer = output->server->renderer;
 
   struct timespec now;
   clock_gettime(CLOCK_MONOTONIC, &now);
-  wlr_output_damage_add_whole(output->damage);
+
+  /// use this for debugging rendering functions in case nothing else works
+  // wlr_output_damage_add_whole(output->damage);
+
   bool needs_frame;
   pixman_region32_t buffer_damage;
   pixman_region32_init(&buffer_damage);
+  // fps_counter(now);
   /* wlr_output_attach_render makes the OpenGL context current. */
   if (!wlr_output_damage_attach_render(output->damage, &needs_frame,
                                        &buffer_damage)) {
     return;
   }
 
-  ti::render_data rdata;
-  rdata.damage = &buffer_damage;
-  rdata.alpha = 1.0;
-
-  int nrects;
-  /// TODO: this needs to be moved after the goto
-  pixman_box32_t *rects = pixman_region32_rectangles(&buffer_damage, &nrects);
+  ti::render_data rdata = {
+      .damage = &buffer_damage,
+      .alpha = 1.0,
+  };
 
   if (!needs_frame) {
     // Output doesn't need swap and isn't damaged, skip rendering completely
     goto buffer_damage_finish;
   }
 
-  /* The "effective" resolution can change if you rotate your outputs. */
-  int width, height;
-  wlr_output_effective_resolution(output->wlr_output, &width, &height);
+  // /* The "effective" resolution can change if you rotate your outputs. */
+  // wlr_output_effective_resolution(output->wlr_output, &width, &height);
   /* Begin the renderer (calls glViewport and some other GL sanity checks) */
-  wlr_renderer_begin(renderer, width, height);
+  wlr_renderer_begin(renderer, output->wlr_output->width,
+                     output->wlr_output->height);
 
   if (!pixman_region32_not_empty(&buffer_damage)) {
     // Output isn't damaged but needs buffer swap
     goto renderer_end;
   }
 
+  rects = pixman_region32_rectangles(&buffer_damage, &nrects);
   for (int i = 0; i < nrects; ++i) {
     scissor_output(output->wlr_output, &rects[i]);
     wlr_renderer_clear(renderer, color);
@@ -236,34 +245,7 @@ static void output_frame(struct wl_listener *listener, void *data) {
    * our view list is ordered front-to-back, we iterate over it backwards. */
   ti::view *view;
   wl_list_for_each_reverse(view, &output->server->wem_views, wem_link) {
-    if (!view->mapped) {
-      /* An unmapped view should not be rendered. */
-      continue;
-    }
-    rdata.output = output->wlr_output;
-    rdata.renderer = renderer;
-    rdata.view = view;
-    rdata.when = &now;
-
-    render_decorations(output, view, &rdata);
-
-    switch (view->type) {
-    case ti::XDG_SHELL_VIEW: {
-      /* This calls our render_surface function for each surface among the
-       * xdg_surface's toplevel and popups. */
-      ti::xdg_view *v = dynamic_cast<ti::xdg_view *>(view);
-      wlr_xdg_surface_for_each_surface(v->xdg_surface, render_surface, &rdata);
-      break;
-    }
-    case ti::XWAYLAND_VIEW: {
-      // rendering the surface directly
-      // render_surface(view->xwayland_surface->surface, 0, 0, &rdata);
-      ti::xwayland_view *v = dynamic_cast<ti::xwayland_view *>(view);
-
-      wlr_surface_for_each_surface(v->surface, render_surface, &rdata);
-      break;
-    }
-    }
+    view->render(output, &rdata);
   }
 
 renderer_end:
@@ -273,7 +255,7 @@ renderer_end:
    * reason, wlroots provides a software fallback, which we ask it to render
    * here. wlr_cursor handles configuring hardware vs software cursors for you,
    * and this function is a no-op when hardware cursors are in use. */
-  wlr_output_render_software_cursors(output->wlr_output, NULL);
+  wlr_output_render_software_cursors(output->wlr_output, &buffer_damage);
   wlr_renderer_scissor(renderer, NULL);
 
   /* Conclude rendering and swap the buffers, showing the final frame
@@ -297,7 +279,8 @@ renderer_end:
 buffer_damage_finish:
   pixman_region32_fini(&buffer_damage);
 
-  fp3s_counter(now);
+  // Send frame done events to all surfaces
+  output->for_each_surface(surface_send_frame_done_iterator, &now);
 }
 
 void handle_new_output(struct wl_listener *listener, void *data) {
@@ -347,6 +330,8 @@ void handle_new_output(struct wl_listener *listener, void *data) {
    * output (such as DPI, scale factor, manufacturer, etc).
    */
   wlr_output_layout_add_auto(server->output_layout, wlr_output);
+
+  wlr_output_damage_add_whole(output->damage);
 }
 
 void ti::output::get_decoration_box(ti::view &view, struct wlr_box &box) {
@@ -366,4 +351,27 @@ void ti::output::get_decoration_box(ti::view &view, struct wlr_box &box) {
   box.y = y * wlr_output->scale;
   box.width = deco_box.width * wlr_output->scale;
   box.height = deco_box.height * wlr_output->scale;
+}
+
+void ti::output::damage_partial_view(ti::view *view) {
+  /// TODO: incomplete
+  bool whole = false;
+  this->view_for_each_surface(view, damage_surface_iterator, &whole);
+}
+
+void ti::output::damage_whole_view(ti::view *view) {
+
+  damage_whole_decoration(view, this);
+
+  bool whole = true;
+  this->view_for_each_surface(view, damage_surface_iterator, &whole);
+}
+
+void ti::output::for_each_surface(ti_surface_iterator_func_t iterator,
+                                  void *user_data) {
+  /// TODO: re-add fullscreen, drag icons, layers
+  ti::view *view;
+  wl_list_for_each_reverse(view, &server->wem_views, wem_link) {
+    this->view_for_each_surface(view, iterator, user_data);
+  }
 }

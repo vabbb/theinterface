@@ -25,6 +25,10 @@ public:
   struct wl_listener request_configure;
 
   std::string get_title() override;
+  void for_each_surface(wlr_surface_iterator_func_t iterator,
+                        void *user_data) override;
+  void activate() override;
+  void deactivate() override;
 
   xwayland_view();
   ~xwayland_view();
