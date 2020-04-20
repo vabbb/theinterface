@@ -50,8 +50,8 @@ static void handle_xwayland_surface_map(struct wl_listener *listener,
 
   if (view->was_ever_mapped == false) {
     view->was_ever_mapped = true;
-    ti::xwayland_view *v = dynamic_cast<ti::xwayland_view *>(view);
-    wl_list_insert(&view->desktop->wem_views, &v->wem_link);
+    ti::view *v = dynamic_cast<ti::view *>(view);
+    wl_list_insert(&v->desktop->wem_views, &v->wem_link);
   }
 
   view->box.width = xwayland_surface->width;

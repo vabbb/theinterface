@@ -48,17 +48,17 @@ public:
   struct wl_listener cursor_button;
   struct wl_listener cursor_axis;
   struct wl_listener cursor_frame;
-  int view_x, view_y;
+  int view_x = 0, view_y = 0;
 
   struct wlr_seat *seat;
   struct wl_listener request_cursor;
   struct wl_list keyboards;
   enum ti::cursor_mode cursor_mode;
 
-  class view *focused_view;
+  class view *focused_view = nullptr;
 
-  class view *grabbed_view;
-  double grab_x, grab_y;
+  class view *grabbed_view = nullptr;
+  double grab_x = 0, grab_y = 0;
   int grab_width, grab_height;
   uint32_t resize_edges;
 

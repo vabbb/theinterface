@@ -21,14 +21,16 @@ static void handle_xdg_surface_commit(struct wl_listener *listener,
 static void handle_xdg_surface_map(struct wl_listener *listener, void *data) {
   ti::xdg_view *view = wl_container_of(listener, view, map);
   view->mapped = true;
-  view->toplevel_handle = wlr_foreign_toplevel_handle_v1_create(
-      view->desktop->foreign_toplevel_manager_v1);
 
   if (view->was_ever_mapped == false) {
     view->was_ever_mapped = true;
     ti::view *v = dynamic_cast<ti::view *>(view);
-    wl_list_insert(&view->desktop->wem_views, &v->wem_link);
+    wl_list_insert(&v->desktop->wem_views, &v->wem_link);
   }
+
+  view->toplevel_handle = wlr_foreign_toplevel_handle_v1_create(
+      view->desktop->foreign_toplevel_manager_v1);
+
   view->focus();
 }
 
