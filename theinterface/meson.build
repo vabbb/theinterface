@@ -1,5 +1,6 @@
 theinterface_sources = files(
   'cursor.cpp',
+  'desktop.cpp',
   'main.cpp',
   'keyboard.cpp',
   'output.cpp',

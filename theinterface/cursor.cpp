@@ -7,27 +7,30 @@ extern "C" {
 
 #include "keyboard.hpp"
 #include "seat.hpp"
-#include "server.hpp"
 #include "xdg_shell.hpp"
 #include "xwayland.hpp"
 
+#include "server.hpp"
+
+#include "desktop.hpp"
+
 #include "cursor.hpp"
 
-void ti::server::new_pointer(struct wlr_input_device *device) {
+void ti::desktop::new_pointer(struct wlr_input_device *device) {
   wlr_cursor_attach_input_device(this->cursor, device);
 }
 
 void handle_new_input(struct wl_listener *listener, void *data) {
-  ti::server *server = wl_container_of(listener, server, new_input);
+  ti::desktop *desktop = wl_container_of(listener, desktop, new_input);
   struct wlr_input_device *device =
       reinterpret_cast<struct wlr_input_device *>(data);
 
   switch (device->type) {
   case WLR_INPUT_DEVICE_KEYBOARD:
-    server->new_keyboard(device);
+    desktop->new_keyboard(device);
     break;
   case WLR_INPUT_DEVICE_POINTER:
-    server->new_pointer(device);
+    desktop->new_pointer(device);
     break;
   default:
     break;
@@ -36,18 +39,18 @@ void handle_new_input(struct wl_listener *listener, void *data) {
    * communiciated to the client. In TinyWL we always have a cursor, even if
    * there are no pointer devices, so we always include that capability. */
   uint32_t caps = WL_SEAT_CAPABILITY_POINTER;
-  if (!wl_list_empty(&server->keyboards)) {
+  if (!wl_list_empty(&desktop->keyboards)) {
     caps |= WL_SEAT_CAPABILITY_KEYBOARD;
   }
-  wlr_seat_set_capabilities(server->seat, caps);
+  wlr_seat_set_capabilities(desktop->seat, caps);
 }
 
 /* Move the grabbed view to the new position. */
-static void process_cursor_move(ti::server *server, uint32_t time) {
-  server->grabbed_view->damage_whole();
-  server->grabbed_view->box.x = server->cursor->x - server->grab_x;
-  server->grabbed_view->box.y = server->cursor->y - server->grab_y;
-  server->grabbed_view->damage_whole();
+static void process_cursor_move(ti::desktop *desktop, uint32_t time) {
+  desktop->grabbed_view->damage_whole();
+  desktop->grabbed_view->box.x = desktop->cursor->x - desktop->grab_x;
+  desktop->grabbed_view->box.y = desktop->cursor->y - desktop->grab_y;
+  desktop->grabbed_view->damage_whole();
 }
 
 /** Resizing the grabbed view can be a little bit complicated, because we
@@ -59,30 +62,30 @@ static void process_cursor_move(ti::server *server, uint32_t time) {
  * you'd wait for the client to prepare a buffer at the new size, then
  * commit any movement that was prepared.
  */
-static void process_cursor_resize(ti::server *server, uint32_t time) {
-  ti::view *view = server->grabbed_view;
-  double dx = server->cursor->x - server->grab_x;
-  double dy = server->cursor->y - server->grab_y;
+static void process_cursor_resize(ti::desktop *desktop, uint32_t time) {
+  ti::view *view = desktop->grabbed_view;
+  double dx = desktop->cursor->x - desktop->grab_x;
+  double dy = desktop->cursor->y - desktop->grab_y;
   double x = view->box.x;
   double y = view->box.y;
-  int width = server->grab_width;
-  int height = server->grab_height;
-  if (server->resize_edges & WLR_EDGE_TOP) {
-    y = server->view_y + dy;
+  int width = desktop->grab_width;
+  int height = desktop->grab_height;
+  if (desktop->resize_edges & WLR_EDGE_TOP) {
+    y = desktop->view_y + dy;
     height -= dy;
     if (height < 1) {
       y += height;
     }
-  } else if (server->resize_edges & WLR_EDGE_BOTTOM) {
+  } else if (desktop->resize_edges & WLR_EDGE_BOTTOM) {
     height += dy;
   }
-  if (server->resize_edges & WLR_EDGE_LEFT) {
-    x = server->view_x + dx;
+  if (desktop->resize_edges & WLR_EDGE_LEFT) {
+    x = desktop->view_x + dx;
     width -= dx;
     if (width < 1) {
       x += width;
     }
-  } else if (server->resize_edges & WLR_EDGE_RIGHT) {
+  } else if (desktop->resize_edges & WLR_EDGE_RIGHT) {
     width += dx;
   }
 
@@ -107,28 +110,28 @@ static void process_cursor_resize(ti::server *server, uint32_t time) {
   view->damage_whole();
 }
 
-static void process_cursor_motion(ti::server *server, uint32_t time) {
+static void process_cursor_motion(ti::desktop *desktop, uint32_t time) {
   /* If the mode is non-passthrough, delegate to those functions. */
-  if (server->cursor_mode == ti::CURSOR_MOVE) {
-    process_cursor_move(server, time);
+  if (desktop->cursor_mode == ti::CURSOR_MOVE) {
+    process_cursor_move(desktop, time);
     return;
-  } else if (server->cursor_mode == ti::CURSOR_RESIZE) {
-    process_cursor_resize(server, time);
+  } else if (desktop->cursor_mode == ti::CURSOR_RESIZE) {
+    process_cursor_resize(desktop, time);
     return;
   }
 
   /* Otherwise, find the view under the pointer and send the event along. */
   double sx, sy;
-  struct wlr_seat *seat = server->seat;
+  struct wlr_seat *seat = desktop->seat;
   struct wlr_surface *surface = NULL;
-  ti::view *view = desktop_view_at(server, server->cursor->x, server->cursor->y,
-                                   &surface, &sx, &sy);
+  ti::view *view = desktop_view_at(desktop, desktop->cursor->x,
+                                   desktop->cursor->y, &surface, &sx, &sy);
   if (!view) {
     /* If there's no view under the cursor, set the cursor image to a
      * default. This is what makes the cursor image appear when you move it
      * around the screen, not over any views. */
-    wlr_xcursor_manager_set_cursor_image(server->cursor_mgr, "left_ptr",
-                                         server->cursor);
+    wlr_xcursor_manager_set_cursor_image(desktop->cursor_mgr, "left_ptr",
+                                         desktop->cursor);
   }
   if (surface) {
     bool focus_changed = seat->pointer_state.focused_surface != surface;
@@ -154,7 +157,7 @@ static void process_cursor_motion(ti::server *server, uint32_t time) {
 }
 
 void handle_cursor_motion(struct wl_listener *listener, void *data) {
-  ti::server *server = wl_container_of(listener, server, cursor_motion);
+  ti::desktop *desktop = wl_container_of(listener, desktop, cursor_motion);
   struct wlr_event_pointer_motion *event =
       (struct wlr_event_pointer_motion *)data;
   /* The cursor doesn't move unless we tell it to. The cursor automatically
@@ -162,35 +165,35 @@ void handle_cursor_motion(struct wl_listener *listener, void *data) {
    * special configuration applied for the specific input device which
    * generated the event. You can pass NULL for the device if you want to move
    * the cursor around without any input. */
-  wlr_cursor_move(server->cursor, event->device, event->delta_x,
+  wlr_cursor_move(desktop->cursor, event->device, event->delta_x,
                   event->delta_y);
-  process_cursor_motion(server, event->time_msec);
+  process_cursor_motion(desktop, event->time_msec);
 }
 
 void handle_cursor_motion_absolute(struct wl_listener *listener, void *data) {
-  ti::server *server =
-      wl_container_of(listener, server, cursor_motion_absolute);
+  ti::desktop *desktop =
+      wl_container_of(listener, desktop, cursor_motion_absolute);
   struct wlr_event_pointer_motion_absolute *event =
       (struct wlr_event_pointer_motion_absolute *)data;
-  wlr_cursor_warp_absolute(server->cursor, event->device, event->x, event->y);
-  process_cursor_motion(server, event->time_msec);
+  wlr_cursor_warp_absolute(desktop->cursor, event->device, event->x, event->y);
+  process_cursor_motion(desktop, event->time_msec);
 }
 
 void handle_cursor_button(struct wl_listener *listener, void *data) {
-  ti::server *server = wl_container_of(listener, server, cursor_button);
+  ti::desktop *desktop = wl_container_of(listener, desktop, cursor_button);
   struct wlr_event_pointer_button *event =
       reinterpret_cast<struct wlr_event_pointer_button *>(data);
   /* Notify the client with pointer focus that a button press has occurred */
-  wlr_seat_pointer_notify_button(server->seat, event->time_msec, event->button,
+  wlr_seat_pointer_notify_button(desktop->seat, event->time_msec, event->button,
                                  event->state);
   double sx, sy;
-  struct wlr_seat *seat = server->seat;
+  struct wlr_seat *seat = desktop->seat;
   struct wlr_surface *surface = NULL;
-  ti::view *view = desktop_view_at(server, server->cursor->x, server->cursor->y,
-                                   &surface, &sx, &sy);
+  ti::view *view = desktop_view_at(desktop, desktop->cursor->x,
+                                   desktop->cursor->y, &surface, &sx, &sy);
   if (event->state == WLR_BUTTON_RELEASED) {
     /* If you released any buttons, we exit interactive move/resize mode. */
-    server->cursor_mode = ti::CURSOR_PASSTHROUGH;
+    desktop->cursor_mode = ti::CURSOR_PASSTHROUGH;
   } else {
     if (!view) {
       // unfocus();
@@ -202,16 +205,16 @@ void handle_cursor_button(struct wl_listener *listener, void *data) {
 }
 
 void handle_cursor_axis(struct wl_listener *listener, void *data) {
-  ti::server *server = wl_container_of(listener, server, cursor_axis);
+  ti::desktop *desktop = wl_container_of(listener, desktop, cursor_axis);
   struct wlr_event_pointer_axis *event = (struct wlr_event_pointer_axis *)data;
   /* Notify the client with pointer focus of the axis event. */
-  wlr_seat_pointer_notify_axis(server->seat, event->time_msec,
+  wlr_seat_pointer_notify_axis(desktop->seat, event->time_msec,
                                event->orientation, event->delta,
                                event->delta_discrete, event->source);
 }
 
 void handle_cursor_frame(struct wl_listener *listener, void *data) {
-  ti::server *server = wl_container_of(listener, server, cursor_frame);
+  ti::desktop *desktop = wl_container_of(listener, desktop, cursor_frame);
   /* Notify the client with pointer focus of the frame event. */
-  wlr_seat_pointer_notify_frame(server->seat);
+  wlr_seat_pointer_notify_frame(desktop->seat);
 }

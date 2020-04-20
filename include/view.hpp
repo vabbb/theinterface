@@ -23,6 +23,7 @@ enum view_type {
 };
 
 struct render_data;
+class desktop;
 
 /// view interface
 class view {
@@ -44,9 +45,9 @@ public:
   uid_t uid;
   gid_t gid;
 
-  class server *server;
-  struct wl_list link;     // ti::server::views
-  struct wl_list wem_link; // ti::server::wem_views
+  ti::desktop *desktop;
+  struct wl_list link;     // ti::desktop::views
+  struct wl_list wem_link; // ti::desktop::wem_views
   struct wl_list children; // ti::view_child::link
   struct wlr_surface *surface;
 

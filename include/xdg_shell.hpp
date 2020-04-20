@@ -1,6 +1,10 @@
 #ifndef TI_XDG_SHELL_HPP
 #define TI_XDG_SHELL_HPP
 
+extern "C" {
+#include <wlr/types/wlr_xdg_shell.h>
+}
+
 #include "view.hpp"
 
 namespace ti {

@@ -4,7 +4,10 @@ extern "C" {
 #include <wlr/util/log.h>
 }
 
+#include "cursor.hpp"
 #include "server.hpp"
+
+#include "desktop.hpp"
 
 #include "xwayland.hpp"
 
@@ -48,7 +51,7 @@ static void handle_xwayland_surface_map(struct wl_listener *listener,
   if (view->was_ever_mapped == false) {
     view->was_ever_mapped = true;
     ti::xwayland_view *v = dynamic_cast<ti::xwayland_view *>(view);
-    wl_list_insert(&view->server->wem_views, &v->wem_link);
+    wl_list_insert(&view->desktop->wem_views, &v->wem_link);
   }
 
   view->box.width = xwayland_surface->width;
@@ -66,7 +69,7 @@ static void handle_xwayland_surface_map(struct wl_listener *listener,
   }
 
   view->toplevel_handle = wlr_foreign_toplevel_handle_v1_create(
-      view->server->foreign_toplevel_manager_v1);
+      view->desktop->foreign_toplevel_manager_v1);
 
   wlr_foreign_toplevel_handle_v1_set_title(
       view->toplevel_handle, view->xwayland_surface->title ?: "none");
@@ -134,7 +137,8 @@ static void handle_request_configure(struct wl_listener *listener, void *data) {
 }
 
 void handle_new_xwayland_surface(struct wl_listener *listener, void *data) {
-  ti::server *server = wl_container_of(listener, server, new_xwayland_surface);
+  ti::desktop *desktop =
+      wl_container_of(listener, desktop, new_xwayland_surface);
   struct wlr_xwayland_surface *xwayland_surface =
       reinterpret_cast<struct wlr_xwayland_surface *>(data);
 
@@ -149,7 +153,7 @@ void handle_new_xwayland_surface(struct wl_listener *listener, void *data) {
 
   /* Allocate a ti::view for this surface */
   ti::xwayland_view *view = new ti::xwayland_view;
-  view->server = server;
+  view->desktop = desktop;
   view->xwayland_surface = xwayland_surface;
 
   /* Listen to the various events it can emit */
@@ -174,7 +178,7 @@ void handle_new_xwayland_surface(struct wl_listener *listener, void *data) {
 
   /* Add it to the list of views. */
   ti::view *v = dynamic_cast<ti::view *>(view);
-  wl_list_insert(&server->views, &v->link);
+  wl_list_insert(&desktop->views, &v->link);
 }
 
 std::string ti::xwayland_view::get_title() {

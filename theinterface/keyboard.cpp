@@ -7,11 +7,11 @@ extern "C" {
 #include <wlr/util/log.h>
 }
 
+#include "desktop.hpp"
 #include "keyboard.hpp"
+#include "server.hpp"
 #include "util.hpp"
 #include "xdg_shell.hpp"
-
-#include "server.hpp"
 
 /** This event is raised when a modifier key, such as shift or alt, is
  * pressed. We simply communicate this to the client. */
@@ -24,9 +24,9 @@ static void handle_keyboard_modifiers(struct wl_listener *listener,
    * same seat. You can swap out the underlying wlr_keyboard like this and
    * wlr_seat handles this transparently.
    */
-  wlr_seat_set_keyboard(keyboard->server->seat, keyboard->device);
+  wlr_seat_set_keyboard(keyboard->desktop->seat, keyboard->device);
   /* Send modifiers to the client. */
-  wlr_seat_keyboard_notify_modifiers(keyboard->server->seat,
+  wlr_seat_keyboard_notify_modifiers(keyboard->desktop->seat,
                                      &keyboard->device->keyboard->modifiers);
 }
 
@@ -45,29 +45,29 @@ static bool ti_chvt(ti::server *server, uint32_t keysym) {
 }
 
 /// Start the alt+tab handler
-static bool ti_alt_tab(ti::server *server, uint32_t keysym) {
+static bool ti_alt_tab(ti::desktop *desktop, uint32_t keysym) {
   /* Cycle to the next view */
-  if (wl_list_length(&server->wem_views) < 2) {
+  if (wl_list_length(&desktop->wem_views) < 2) {
     return false;
   }
   ti::view *current_view =
-      wl_container_of(server->wem_views.next, current_view, wem_link);
+      wl_container_of(desktop->wem_views.next, current_view, wem_link);
   ti::view *next_view =
       wl_container_of(current_view->wem_link.next, next_view, wem_link);
   next_view->focus();
   /* Move the previous view to the end of the list */
   wl_list_remove(&current_view->wem_link);
-  wl_list_insert(server->wem_views.prev, &current_view->wem_link);
+  wl_list_insert(desktop->wem_views.prev, &current_view->wem_link);
   return true;
 }
 
 /// alt+f4 handler
-static bool ti_alt_f4(ti::server *server, uint32_t keysym) {
+static bool ti_alt_f4(ti::desktop *desktop, uint32_t keysym) {
   bool ret = false;
   ti::view *current_view =
-      wl_container_of(server->wem_views.next, current_view, wem_link);
+      wl_container_of(desktop->wem_views.next, current_view, wem_link);
 
-  if (wl_list_length(&server->wem_views) > 1) {
+  if (wl_list_length(&desktop->wem_views) > 1) {
     ti::view *next_view =
         wl_container_of(current_view->wem_link.next, next_view, wem_link);
     next_view->focus();
@@ -81,8 +81,9 @@ static bool ti_alt_f4(ti::server *server, uint32_t keysym) {
  * processing keys, rather than passing them on to the client for its own
  * processing.
  */
-static bool handle_keybinding(ti::server *server, const xkb_keysym_t *syms,
+static bool handle_keybinding(ti::desktop *desktop, const xkb_keysym_t *syms,
                               uint32_t modifiers, size_t syms_len) {
+  ti::server *server = desktop->server;
   xkb_keysym_t keysym;
   switch (modifiers) {
   case WLR_MODIFIER_LOGO: {
@@ -117,11 +118,11 @@ static bool handle_keybinding(ti::server *server, const xkb_keysym_t *syms,
       keysym = syms[i];
       switch (keysym) {
       case XKB_KEY_Tab: {
-        ti_alt_tab(server, keysym);
+        ti_alt_tab(desktop, keysym);
         return true;
       }
       case XKB_KEY_F4: {
-        ti_alt_f4(server, keysym);
+        ti_alt_f4(desktop, keysym);
         return true;
       }
       }
@@ -135,10 +136,10 @@ static bool handle_keybinding(ti::server *server, const xkb_keysym_t *syms,
 static void keyboard_handle_key(struct wl_listener *listener, void *data) {
   /* This event is raised when a key is pressed or released. */
   ti::keyboard *keyboard = wl_container_of(listener, keyboard, key);
-  ti::server *server = keyboard->server;
+  ti::desktop *desktop = keyboard->desktop;
   struct wlr_event_keyboard_key *event =
       reinterpret_cast<struct wlr_event_keyboard_key *>(data);
-  struct wlr_seat *seat = server->seat;
+  struct wlr_seat *seat = desktop->seat;
 
   /* Translate libinput keycode -> xkbcommon */
   uint32_t keycode = event->keycode + 8;
@@ -152,7 +153,7 @@ static void keyboard_handle_key(struct wl_listener *listener, void *data) {
   if (event->state == WLR_KEY_PRESSED) {
     /* If a key was _pressed_, we attempt to
      * process it as a compositor keybinding. */
-    handled = handle_keybinding(server, syms, modifiers, nsyms);
+    handled = handle_keybinding(desktop, syms, modifiers, nsyms);
   }
 
   if (!handled) {
@@ -163,9 +164,9 @@ static void keyboard_handle_key(struct wl_listener *listener, void *data) {
   }
 }
 
-void ti::server::new_keyboard(struct wlr_input_device *device) {
+void ti::desktop::new_keyboard(struct wlr_input_device *device) {
   ti::keyboard *keyboard = new ti::keyboard;
-  keyboard->server = this;
+  keyboard->desktop = this;
   keyboard->device = device;
 
   /* We need to prepare an XKB keymap and assign it to the keyboard. This

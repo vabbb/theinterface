@@ -1,12 +1,11 @@
 #ifndef TI_KEYBOARD_HPP
 #define TI_KEYBOARD_HPP
 
-#include "server.hpp"
-
 namespace ti {
+class desktop;
 struct keyboard {
   struct wl_list link;
-  ti::server *server;
+  ti::desktop *desktop;
   struct wlr_input_device *device;
 
   struct wl_listener modifiers;

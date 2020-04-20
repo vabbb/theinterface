@@ -6,7 +6,7 @@ extern "C" {
 }
 
 namespace ti {
-class server;
+class desktop;
 class view;
 class output;
 } // namespace ti
@@ -28,7 +28,7 @@ struct surface_iterator_data {
 namespace ti {
 struct output {
   struct wl_list link;
-  ti::server *server;
+  ti::desktop *desktop;
   struct wlr_output *wlr_output;
   struct wl_listener frame;
 

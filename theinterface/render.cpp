@@ -1,6 +1,9 @@
 #include <cmath>
 
 extern "C" {
+#include <wlr/backend.h>
+
+#include <wlr/types/wlr_presentation_time.h>
 #include <wlr/util/log.h>
 #define static
 #include <wlr/render/wlr_renderer.h>
@@ -8,6 +11,7 @@ extern "C" {
 #undef static
 }
 
+#include "desktop.hpp"
 #include "output.hpp"
 #include "render.hpp"
 #include "server.hpp"
@@ -147,6 +151,6 @@ void render_surface_iterator(ti::output *output, struct wlr_surface *surface,
 
   render_texture(wlr_output, output_damage, texture, &box, matrix, 0.0, alpha);
 
-  wlr_presentation_surface_sampled_on_output(output->server->presentation,
+  wlr_presentation_surface_sampled_on_output(output->desktop->presentation,
                                              surface, wlr_output);
 }

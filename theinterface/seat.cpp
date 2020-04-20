@@ -1,5 +1,6 @@
 #include <cstdlib>
 
+#include "cursor.hpp"
 #include "server.hpp"
 #include "xdg_shell.hpp"
 #include "xwayland.hpp"
@@ -7,11 +8,11 @@
 #include "seat.hpp"
 
 void seat_request_cursor(struct wl_listener *listener, void *data) {
-  ti::server *server = wl_container_of(listener, server, request_cursor);
+  ti::desktop *desktop = wl_container_of(listener, desktop, request_cursor);
   struct wlr_seat_pointer_request_set_cursor_event *event =
       reinterpret_cast<wlr_seat_pointer_request_set_cursor_event *>(data);
   struct wlr_seat_client *focused_client =
-      server->seat->pointer_state.focused_client;
+      desktop->seat->pointer_state.focused_client;
   /* This can be sent by any client, so we check to make sure this one is
    * actually has pointer focus first. */
   if (focused_client == event->seat_client) {
@@ -19,7 +20,7 @@ void seat_request_cursor(struct wl_listener *listener, void *data) {
      * provided surface as the cursor image. It will set the hardware cursor
      * on the output that it's currently on and continue to do so as the
      * cursor moves between outputs. */
-    wlr_cursor_set_surface(server->cursor, event->surface, event->hotspot_x,
+    wlr_cursor_set_surface(desktop->cursor, event->surface, event->hotspot_x,
                            event->hotspot_y);
   }
 }
@@ -59,11 +60,11 @@ bool view_at(ti::view *view, double lx, double ly, struct wlr_surface **surface,
   return false;
 }
 
-ti::view *desktop_view_at(ti::server *server, double lx, double ly,
+ti::view *desktop_view_at(ti::desktop *desktop, double lx, double ly,
                           struct wlr_surface **surface, double *sx,
                           double *sy) {
   ti::view *view;
-  wl_list_for_each(view, &server->wem_views, wem_link) {
+  wl_list_for_each(view, &desktop->wem_views, wem_link) {
     if (view_at(view, lx, ly, surface, sx, sy)) {
       return view;
     }

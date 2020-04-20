@@ -15,6 +15,8 @@ extern "C" {
 #include <wlr/util/log.h>
 }
 
+#include "cursor.hpp"
+
 #include "server.hpp"
 #include "util.hpp"
 

@@ -1,7 +1,7 @@
 #ifndef TI_SEAT_HPP
 #define TI_SEAT_HPP
 
-#include "server.hpp"
+#include "desktop.hpp"
 #include "view.hpp"
 
 /* This event is rasied by the seat when a client provides a cursor image */
@@ -18,8 +18,8 @@ bool view_at(ti::view *view, double lx, double ly, struct wlr_surface **surface,
              double *sx, double *sy);
 
 /** This iterates over all of our surfaces and attempts to find one under the
- *  cursor. This relies on server->views being ordered from top-to-bottom. */
-ti::view *desktop_view_at(ti::server *server, double lx, double ly,
+ *  cursor. This relies on desktop->views being ordered from top-to-bottom. */
+ti::view *desktop_view_at(ti::desktop *desktop, double lx, double ly,
                           struct wlr_surface **surface, double *sx, double *sy);
 
 #endif

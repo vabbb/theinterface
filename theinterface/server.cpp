@@ -1,20 +1,27 @@
 extern "C" {
+#include <wlr/backend.h>
+
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_foreign_toplevel_management_v1.h>
 #include <wlr/util/log.h>
+#define static
+#include <wlr/render/wlr_renderer.h>
+#undef static
 }
 
 #include "output.hpp"
 #include "seat.hpp"
-#include "xdg_shell.hpp"
-#include "xwayland.hpp"
 
 #include "server.hpp"
 
 ti::server::server() {
   /* The Wayland display is managed by libwayland. It handles accepting
    * clients from the Unix socket, manging Wayland globals, and so on. */
-  display = wl_display_create();
+  this->display = wl_display_create();
+  if (!this->display) {
+    wlr_log_errno(WLR_ERROR, "Unable to create a wayland display");
+  }
+
   /* The backend is a wlroots feature which abstracts the underlying input and
    * output hardware. The autocreate option will choose the most suitable
    * backend based on the current environment, such as opening an X11 window
@@ -23,146 +30,48 @@ ti::server::server() {
    * backend uses the renderer, for example, to fall back to software cursors
    * if the backend does not support hardware cursors (some older GPUs
    * don't). */
-  backend = wlr_backend_autocreate(display, NULL);
+  this->backend = wlr_backend_autocreate(this->display, NULL);
+  if (!this->backend) {
+    wlr_log_errno(WLR_ERROR, "Unable to start backend");
+  }
 
   /* If we don't provide a renderer, autocreate makes a GLES2 renderer for us.
    * The renderer is responsible for defining the various pixel formats it
    * supports for shared memory, this configures that for clients. */
-  renderer = wlr_backend_get_renderer(backend);
-  wlr_renderer_init_wl_display(renderer, display);
+  this->renderer = wlr_backend_get_renderer(this->backend);
+  if (!this->renderer) {
+    wlr_log_errno(WLR_ERROR, "Unable to find a renderer");
+  }
+  this->data_device_manager = wlr_data_device_manager_create(this->display);
+  wlr_renderer_init_wl_display(this->renderer, this->display);
 
-  /* This creates some hands-off wlroots interfaces. The compositor is
-   * necessary for clients to allocate surfaces and the data device manager
-   * handles the clipboard. Each of these wlroots interfaces has room for you
-   * to dig your fingers in and play with their behavior if you want. */
-  compositor = wlr_compositor_create(display, renderer);
-  wlr_data_device_manager_create(display);
-
-  /* Creates an output layout, which a wlroots utility for working with an
-   * arrangement of screens in a physical layout. */
-  output_layout = wlr_output_layout_create();
-
-  /* Configure a listener to be notified when new outputs are available on the
-   * backend. */
-  wl_list_init(&outputs);
-  new_output.notify = handle_new_output;
-  wl_signal_add(&backend->events.new_output, &new_output);
-
-  /* Set up our list of views and the xdg-shell. The xdg-shell is a Wayland
-   * protocol which is used for application windows. For more detail on
-   * shells, refer to my article:
-   *
-   * https://drewdevault.com/2018/07/29/Wayland-shells.html
-   */
-  wl_list_init(&views);
-  xdg_shell = wlr_xdg_shell_create(display);
-  new_xdg_surface.notify = handle_new_xdg_surface;
-  wl_signal_add(&xdg_shell->events.new_surface, &new_xdg_surface);
-
-  // these are all the views with was_ever_mapped set to true. We need this for
-  // alt+tab to work
-  wl_list_init(&wem_views);
-
-  foreign_toplevel_manager_v1 = wlr_foreign_toplevel_manager_v1_create(display);
-
-  /*
-   * Creates a cursor, which is a wlroots utility for tracking the cursor
-   * image shown on screen.
-   */
-  cursor = wlr_cursor_create();
-  wlr_cursor_attach_output_layout(cursor, output_layout);
-
-  /* Creates an xcursor manager, another wlroots utility which loads up
-   * Xcursor themes to source cursor images from and makes sure that cursor
-   * images are available at all scale factors on the screen (necessary for
-   * HiDPI support). We add a cursor theme at scale factor 1 to begin with. */
-  cursor_mgr = wlr_xcursor_manager_create(nullptr, 24);
-  wlr_xcursor_manager_load(cursor_mgr, 1);
-
-  /*
-   * wlr_cursor *only* displays an image on screen. It does not move around
-   * when the pointer moves. However, we can attach input devices to it, and
-   * it will generate aggregate events for all of them. In these events, we
-   * can choose how we want to process them, forwarding them to clients and
-   * moving the cursor around. More detail on this process is described in my
-   * input handling blog post:
-   *
-   * https://drewdevault.com/2018/07/17/Input-handling-in-wlroots.html
-   *
-   * And more comments are sprinkled throughout the notify functions above.
-   */
-  cursor_motion.notify = handle_cursor_motion;
-  wl_signal_add(&cursor->events.motion, &cursor_motion);
-  cursor_motion_absolute.notify = handle_cursor_motion_absolute;
-  wl_signal_add(&cursor->events.motion_absolute, &cursor_motion_absolute);
-  cursor_button.notify = handle_cursor_button;
-  wl_signal_add(&cursor->events.button, &cursor_button);
-  cursor_axis.notify = handle_cursor_axis;
-  wl_signal_add(&cursor->events.axis, &cursor_axis);
-  cursor_frame.notify = handle_cursor_frame;
-  wl_signal_add(&cursor->events.frame, &cursor_frame);
-
-  /*
-   * Configures a seat, which is a single "seat" at which a user sits and
-   * operates the computer. This conceptually includes up to one keyboard,
-   * pointer, touch, and drawing tablet device. We also rig up a listener to
-   * let us know when new input devices are available on the backend.
-   */
-  wl_list_init(&keyboards);
-  new_input.notify = handle_new_input;
-  wl_signal_add(&backend->events.new_input, &new_input);
-  seat = wlr_seat_create(display, "seat0");
-  request_cursor.notify = seat_request_cursor;
-  wl_signal_add(&seat->events.request_set_cursor, &request_cursor);
+  this->desktop = new ti::desktop(this);
 
   /* Add a Unix socket to the Wayland display. */
-  const char *socket = wl_display_add_socket_auto(display);
+  const char *socket = wl_display_add_socket_auto(this->display);
   if (!socket) {
-    wlr_backend_destroy(backend);
+    wlr_backend_destroy(this->backend);
     exit(EXIT_FAILURE);
   }
-
-  /* Start the backend. This will enumerate outputs and inputs, become the DRM
-   * master, etc */
-  if (!wlr_backend_start(backend)) {
-    wlr_backend_destroy(backend);
-    wl_display_destroy(display);
-    exit(EXIT_FAILURE);
-  }
-
-#ifdef WLR_HAS_XWAYLAND
-  xwayland = wlr_xwayland_create(display, compositor, false);
-  new_xwayland_surface.notify = handle_new_xwayland_surface;
-  wl_signal_add(&xwayland->events.new_surface, &new_xwayland_surface);
-  setenv("DISPLAY", xwayland->display_name, true);
-
-  xwayland_xcursor_manager = wlr_xcursor_manager_create(nullptr, 24);
-  wlr_xcursor_manager_load(xwayland_xcursor_manager, 1);
-  xcursor =
-      wlr_xcursor_manager_get_xcursor(xwayland_xcursor_manager, "left_ptr", 1);
-  if (xcursor != NULL) {
-    struct wlr_xcursor_image *image = xcursor->images[0];
-    wlr_xwayland_set_cursor(xwayland, image->buffer, image->width * 4,
-                            image->width, image->height, image->hotspot_x,
-                            image->hotspot_y);
-  }
-  wlr_xwayland_set_seat(xwayland, seat);
-#endif
 
   /* Set the WAYLAND_DISPLAY environment variable to our socket and run the
    * startup command if requested. */
-  setenv("WAYLAND_DISPLAY", socket, true);
   wlr_log(WLR_INFO, "Running TheInterface on WAYLAND_DISPLAY=%s", socket);
+  setenv("WAYLAND_DISPLAY", socket, true);
 
-  presentation = wlr_presentation_create(display, backend);
+  /* Start the backend. This will enumerate outputs and inputs, become the DRM
+   * master, etc */
+  if (!wlr_backend_start(this->backend)) {
+    wlr_backend_destroy(this->backend);
+    wl_display_destroy(this->display);
+    exit(EXIT_FAILURE);
+  }
 }
 
 /// automatically ran when the program is about to exit
 ti::server::~server() {
   wlr_log(WLR_INFO, "Deallocating server resources");
-#ifdef WLR_HAS_XWAYLAND
-  wlr_xwayland_destroy(xwayland);
-#endif
+  delete desktop;
   /* Once wl_display_run returns, we shut down the server. */
   wl_display_destroy_clients(display);
   wl_display_destroy(display);

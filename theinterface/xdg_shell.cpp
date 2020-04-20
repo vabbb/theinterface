@@ -4,6 +4,9 @@ extern "C" {
 #include <wlr/types/wlr_foreign_toplevel_management_v1.h>
 #include <wlr/util/log.h>
 }
+
+#include "seat.hpp"
+
 #include "server.hpp"
 
 #include "xdg_shell.hpp"
@@ -19,12 +22,12 @@ static void handle_xdg_surface_map(struct wl_listener *listener, void *data) {
   ti::xdg_view *view = wl_container_of(listener, view, map);
   view->mapped = true;
   view->toplevel_handle = wlr_foreign_toplevel_handle_v1_create(
-      view->server->foreign_toplevel_manager_v1);
+      view->desktop->foreign_toplevel_manager_v1);
 
   if (view->was_ever_mapped == false) {
     view->was_ever_mapped = true;
     ti::view *v = dynamic_cast<ti::view *>(view);
-    wl_list_insert(&view->server->wem_views, &v->wem_link);
+    wl_list_insert(&view->desktop->wem_views, &v->wem_link);
   }
   view->focus();
 }
@@ -79,7 +82,7 @@ static void handle_xdg_toplevel_request_resize(struct wl_listener *listener,
 }
 
 void handle_new_xdg_surface(struct wl_listener *listener, void *data) {
-  ti::server *server = wl_container_of(listener, server, new_xdg_surface);
+  ti::desktop *desktop = wl_container_of(listener, desktop, new_xdg_surface);
   struct wlr_xdg_surface *xdg_surface =
       reinterpret_cast<struct wlr_xdg_surface *>(data);
   if (xdg_surface->role != WLR_XDG_SURFACE_ROLE_TOPLEVEL) {
@@ -89,7 +92,7 @@ void handle_new_xdg_surface(struct wl_listener *listener, void *data) {
   /* Allocate a ti::view for this surface */
   ti::xdg_view *view = new ti::xdg_view;
 
-  view->server = server;
+  view->desktop = desktop;
   view->xdg_surface = xdg_surface;
   view->surface = xdg_surface->surface;
 
@@ -122,7 +125,7 @@ void handle_new_xdg_surface(struct wl_listener *listener, void *data) {
 
   /* Add it to the list of views. */
   ti::view *v = dynamic_cast<ti::view *>(view);
-  wl_list_insert(&server->views, &v->link);
+  wl_list_insert(&desktop->views, &v->link);
 }
 
 std::string ti::xdg_view::get_title() {

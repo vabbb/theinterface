@@ -3,6 +3,7 @@
 
 extern "C" {
 #include <wlr/types/wlr_output_damage.h>
+#include <wlr/types/wlr_output_layout.h>
 #include <wlr/util/log.h>
 #include <wlr/util/region.h>
 #define static
@@ -17,6 +18,8 @@ extern "C" {
 #include "xdg_shell.hpp"
 
 #include "server.hpp"
+
+#include "desktop.hpp"
 
 /**
  * Rotate a child's position relative to a parent. The parent size is (pw, ph),
@@ -97,7 +100,7 @@ void ti::output::view_for_each_surface(ti::view *view,
                                        ti_surface_iterator_func_t iterator,
                                        void *user_data) {
   struct wlr_box *output_box =
-      wlr_output_layout_get_box(server->output_layout, wlr_output);
+      wlr_output_layout_get_box(desktop->output_layout, wlr_output);
   if (!output_box) {
     return;
   }
@@ -196,7 +199,7 @@ static void output_frame(struct wl_listener *listener, void *data) {
 
   enum wl_output_transform transform;
   ti::output *output = wl_container_of(listener, output, frame);
-  struct wlr_renderer *renderer = output->server->renderer;
+  struct wlr_renderer *renderer = output->desktop->server->renderer;
 
   struct timespec now;
   clock_gettime(CLOCK_MONOTONIC, &now);
@@ -244,7 +247,7 @@ static void output_frame(struct wl_listener *listener, void *data) {
   /* Each subsequent window we render is rendered on top of the last. Because
    * our view list is ordered front-to-back, we iterate over it backwards. */
   ti::view *view;
-  wl_list_for_each_reverse(view, &output->server->wem_views, wem_link) {
+  wl_list_for_each_reverse(view, &output->desktop->wem_views, wem_link) {
     view->render(output, &rdata);
   }
 
@@ -284,7 +287,7 @@ buffer_damage_finish:
 }
 
 void handle_new_output(struct wl_listener *listener, void *data) {
-  ti::server *server = wl_container_of(listener, server, new_output);
+  ti::desktop *desktop = wl_container_of(listener, desktop, new_output);
   struct wlr_output *wlr_output = reinterpret_cast<struct wlr_output *>(data);
 
   /* Some backends don't have modes. DRM+KMS does, and we need to set a mode
@@ -313,13 +316,13 @@ void handle_new_output(struct wl_listener *listener, void *data) {
   /* Allocates and configures our state for this output */
   ti::output *output = new ti::output;
   output->wlr_output = wlr_output;
-  output->server = server;
+  output->desktop = desktop;
   output->damage = wlr_output_damage_create(wlr_output);
 
   /* Sets up a listener for the frame notify event. */
   output->frame.notify = output_frame;
   wl_signal_add(&wlr_output->events.frame, &output->frame);
-  wl_list_insert(&server->outputs, &output->link);
+  wl_list_insert(&desktop->outputs, &output->link);
 
   /* Adds this to the output layout. The add_auto function arranges outputs
    * from left-to-right in the order they appear. A more sophisticated
@@ -329,7 +332,7 @@ void handle_new_output(struct wl_listener *listener, void *data) {
    * display, which Wayland clients can see to find out information about the
    * output (such as DPI, scale factor, manufacturer, etc).
    */
-  wlr_output_layout_add_auto(server->output_layout, wlr_output);
+  wlr_output_layout_add_auto(desktop->output_layout, wlr_output);
 
   wlr_output_damage_add_whole(output->damage);
 }
@@ -345,7 +348,7 @@ void ti::output::get_decoration_box(ti::view &view, struct wlr_box &box) {
   double x = sx + view.box.x;
   double y = sy + view.box.y;
 
-  wlr_output_layout_output_coords(server->output_layout, wlr_output, &x, &y);
+  wlr_output_layout_output_coords(desktop->output_layout, wlr_output, &x, &y);
 
   box.x = x * wlr_output->scale;
   box.y = y * wlr_output->scale;
@@ -371,7 +374,7 @@ void ti::output::for_each_surface(ti_surface_iterator_func_t iterator,
                                   void *user_data) {
   /// TODO: re-add fullscreen, drag icons, layers
   ti::view *view;
-  wl_list_for_each_reverse(view, &server->wem_views, wem_link) {
+  wl_list_for_each_reverse(view, &desktop->wem_views, wem_link) {
     this->view_for_each_surface(view, iterator, user_data);
   }
 }
