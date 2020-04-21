@@ -5,19 +5,16 @@ extern "C" {
 #include <wlr/util/log.h>
 }
 
+#include "cursor.hpp"
+#include "desktop.hpp"
 #include "keyboard.hpp"
 #include "seat.hpp"
+#include "server.hpp"
 #include "xdg_shell.hpp"
 #include "xwayland.hpp"
 
-#include "server.hpp"
-
-#include "desktop.hpp"
-
-#include "cursor.hpp"
-
-void ti::desktop::new_pointer(struct wlr_input_device *device) {
-  wlr_cursor_attach_input_device(this->seat->cursor, device);
+void ti::seat::new_pointer(struct wlr_input_device *device) {
+  wlr_cursor_attach_input_device(this->cursor, device);
 }
 
 void handle_new_input(struct wl_listener *listener, void *data) {
@@ -25,12 +22,15 @@ void handle_new_input(struct wl_listener *listener, void *data) {
   struct wlr_input_device *device =
       reinterpret_cast<struct wlr_input_device *>(data);
 
+  /// TODO: pick the right seat
+  ti::seat *seat = desktop->seat;
+
   switch (device->type) {
   case WLR_INPUT_DEVICE_KEYBOARD:
-    desktop->new_keyboard(device);
+    seat->new_keyboard(device);
     break;
   case WLR_INPUT_DEVICE_POINTER:
-    desktop->new_pointer(device);
+    seat->new_pointer(device);
     break;
   default:
     break;

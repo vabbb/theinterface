@@ -48,14 +48,6 @@ public:
   struct wl_listener new_output;
   struct wlr_presentation *presentation;
 
-  void new_keyboard(struct wlr_input_device *device);
-
-  /** We don't do anything special with pointers. All of our pointer handling
-   * is proxied through wlr_cursor. On another compositor, you might take this
-   * opportunity to do libinput configuration on the device to set
-   * acceleration, etc. */
-  void new_pointer(struct wlr_input_device *device);
-
   desktop(ti::server *s);
   ~desktop();
 };

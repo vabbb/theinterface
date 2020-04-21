@@ -64,7 +64,6 @@ static bool ti_alt_tab(ti::seat *seat, unsigned keysym) {
 
 /// alt+f4 handler
 static bool ti_alt_f4(ti::seat *seat, unsigned keysym) {
-  bool ret = false;
   ti::view *current_view =
       wl_container_of(seat->desktop->wem_views.next, current_view, wem_link);
 
@@ -164,9 +163,9 @@ static void keyboard_handle_key(struct wl_listener *listener, void *data) {
   }
 }
 
-void ti::desktop::new_keyboard(struct wlr_input_device *device) {
+void ti::seat::new_keyboard(struct wlr_input_device *device) {
   ti::keyboard *keyboard = new ti::keyboard{};
-  keyboard->seat = this->seat;
+  keyboard->seat = this;
   keyboard->device = device;
 
   /* We need to prepare an XKB keymap and assign it to the keyboard. This
@@ -191,8 +190,8 @@ void ti::desktop::new_keyboard(struct wlr_input_device *device) {
   keyboard->key.notify = keyboard_handle_key;
   wl_signal_add(&device->keyboard->events.key, &keyboard->key);
 
-  wlr_seat_set_keyboard(this->seat->wlr_seat, device);
+  wlr_seat_set_keyboard(this->wlr_seat, device);
 
   /* And add the keyboard to our list of keyboards */
-  wl_list_insert(&this->seat->keyboards, &keyboard->link);
+  wl_list_insert(&this->keyboards, &keyboard->link);
 }

@@ -42,6 +42,14 @@ public:
   /** NOTE: this function only deals with keyboard focus. */
   void focus(ti::view *v);
 
+  void new_keyboard(struct wlr_input_device *device);
+
+  /** We don't do anything special with pointers. All of our pointer handling
+   * is proxied through wlr_cursor. On another compositor, you might take this
+   * opportunity to do libinput configuration on the device to set
+   * acceleration, etc. */
+  void new_pointer(struct wlr_input_device *device);
+
   seat(ti::desktop *d);
   ~seat();
 };
