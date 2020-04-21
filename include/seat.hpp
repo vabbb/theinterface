@@ -35,7 +35,7 @@ public:
   class view *grabbed_view = nullptr;
   double grab_x = 0, grab_y = 0;
   int grab_width, grab_height;
-  uint32_t resize_edges;
+  int resize_edges;
 
   void setup_xwayland_cursor(wlr_xwayland *xwayland);
 

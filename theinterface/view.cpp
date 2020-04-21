@@ -16,7 +16,7 @@ extern "C" {
 
 // mapped is false, so we only map it when the view is ready
 ti::view::view(enum view_type t) : type(t) {}
-ti::view::view(enum view_type t, int32_t __x, int32_t __y) : type(t) {
+ti::view::view(enum view_type t, int __x, int __y) : type(t) {
   box.x = __x;
   box.y = __y;
 }
@@ -41,7 +41,7 @@ void ti::view::get_deco_box(wlr_box &_box) {
   _box.height += (border_width * 2 + titlebar_height);
 }
 
-void ti::view::update_position(int32_t __x, int32_t __y) {
+void ti::view::update_position(int __x, int __y) {
   if (box.x == __x && box.y == __y) {
     return;
   }
@@ -52,7 +52,7 @@ void ti::view::update_position(int32_t __x, int32_t __y) {
   this->damage_whole();
 }
 
-void ti::view::begin_interactive(ti::cursor_mode mode, uint32_t edges) {
+void ti::view::begin_interactive(ti::cursor_mode mode, unsigned edges) {
   ti::seat *seat = this->desktop->seat;
   if (surface != seat->wlr_seat->pointer_state.focused_surface) {
     /* Deny move/resize requests from unfocused clients. */

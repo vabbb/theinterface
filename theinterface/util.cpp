@@ -111,7 +111,7 @@ bool possible_no_hardware_cursor_support() {
 }
 
 void fps_counter(const timespec &now) {
-  static uint32_t frames_last_second;
+  static unsigned frames_last_second;
   static time_t last_checkpoint;
   ++frames_last_second;
   if (now.tv_sec > 0 && now.tv_sec > last_checkpoint) {

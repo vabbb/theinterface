@@ -33,7 +33,7 @@ static void handle_keyboard_modifiers(struct wl_listener *listener,
 
 /// Change virtual terminal to the one specified by keysym called by using
 /// ctrl+alt+fn1..12 keys
-static bool ti_chvt(ti::server *server, uint32_t keysym) {
+static bool ti_chvt(ti::server *server, unsigned keysym) {
   if (wlr_backend_is_multi(server->backend)) {
     struct wlr_session *session = wlr_backend_get_session(server->backend);
     if (session) {
@@ -46,7 +46,7 @@ static bool ti_chvt(ti::server *server, uint32_t keysym) {
 }
 
 /// Start the alt+tab handler
-static bool ti_alt_tab(ti::seat *seat, uint32_t keysym) {
+static bool ti_alt_tab(ti::seat *seat, unsigned keysym) {
   /* Cycle to the next view */
   if (wl_list_length(&seat->desktop->wem_views) < 2) {
     return false;
@@ -63,7 +63,7 @@ static bool ti_alt_tab(ti::seat *seat, uint32_t keysym) {
 }
 
 /// alt+f4 handler
-static bool ti_alt_f4(ti::seat *seat, uint32_t keysym) {
+static bool ti_alt_f4(ti::seat *seat, unsigned keysym) {
   bool ret = false;
   ti::view *current_view =
       wl_container_of(seat->desktop->wem_views.next, current_view, wem_link);
@@ -83,7 +83,7 @@ static bool ti_alt_f4(ti::seat *seat, uint32_t keysym) {
  * processing.
  */
 static bool handle_keybinding(ti::seat *seat, const xkb_keysym_t *syms,
-                              uint32_t modifiers, size_t syms_len) {
+                              unsigned modifiers, size_t syms_len) {
   ti::server *server = seat->desktop->server;
   xkb_keysym_t keysym;
   switch (modifiers) {
@@ -142,14 +142,14 @@ static void keyboard_handle_key(struct wl_listener *listener, void *data) {
       reinterpret_cast<struct wlr_event_keyboard_key *>(data);
 
   /* Translate libinput keycode -> xkbcommon */
-  uint32_t keycode = event->keycode + 8;
+  unsigned keycode = event->keycode + 8;
   /* Get a list of keysyms based on the keymap for this keyboard */
   const xkb_keysym_t *syms;
   int nsyms = xkb_state_key_get_syms(keyboard->device->keyboard->xkb_state,
                                      keycode, &syms);
 
   bool handled = false;
-  uint32_t modifiers = wlr_keyboard_get_modifiers(keyboard->device->keyboard);
+  unsigned modifiers = wlr_keyboard_get_modifiers(keyboard->device->keyboard);
   if (event->state == WLR_KEY_PRESSED) {
     /* If a key was _pressed_, we attempt to
      * process it as a compositor keybinding. */

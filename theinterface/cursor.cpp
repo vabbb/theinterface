@@ -38,7 +38,7 @@ void handle_new_input(struct wl_listener *listener, void *data) {
   /* We need to let the wlr_seat know what our capabilities are, which is
    * communiciated to the client. In TinyWL we always have a cursor, even if
    * there are no pointer devices, so we always include that capability. */
-  uint32_t caps = WL_SEAT_CAPABILITY_POINTER;
+  unsigned caps = WL_SEAT_CAPABILITY_POINTER;
   if (!wl_list_empty(&desktop->seat->keyboards)) {
     caps |= WL_SEAT_CAPABILITY_KEYBOARD;
   }
@@ -46,7 +46,7 @@ void handle_new_input(struct wl_listener *listener, void *data) {
 }
 
 /* Move the grabbed view to the new position. */
-static void process_cursor_move(ti::seat *seat, uint32_t time) {
+static void process_cursor_move(ti::seat *seat, unsigned time) {
   seat->grabbed_view->damage_whole();
   seat->grabbed_view->box.x = seat->cursor->x - seat->grab_x;
   seat->grabbed_view->box.y = seat->cursor->y - seat->grab_y;
@@ -62,7 +62,7 @@ static void process_cursor_move(ti::seat *seat, uint32_t time) {
  * you'd wait for the client to prepare a buffer at the new size, then
  * commit any movement that was prepared.
  */
-static void process_cursor_resize(ti::seat *seat, uint32_t time) {
+static void process_cursor_resize(ti::seat *seat, unsigned time) {
   ti::view *view = seat->grabbed_view;
   double dx = seat->cursor->x - seat->grab_x;
   double dy = seat->cursor->y - seat->grab_y;
@@ -90,10 +90,8 @@ static void process_cursor_resize(ti::seat *seat, uint32_t time) {
   }
 
   view->damage_whole();
-  view->box = {.x = (int32_t)x,
-               .y = (int32_t)y,
-               .width = (int32_t)width,
-               .height = (int32_t)height};
+  view->box = {
+      .x = (int)x, .y = (int)y, .width = (int)width, .height = (int)height};
 
   switch (view->type) {
   case ti::XDG_SHELL_VIEW: {
@@ -110,7 +108,7 @@ static void process_cursor_resize(ti::seat *seat, uint32_t time) {
   view->damage_whole();
 }
 
-static void process_cursor_motion(ti::seat *seat, uint32_t time) {
+static void process_cursor_motion(ti::seat *seat, unsigned time) {
   /* If the mode is non-passthrough, delegate to those functions. */
   if (seat->cursor_mode == ti::CURSOR_MOVE) {
     process_cursor_move(seat, time);
