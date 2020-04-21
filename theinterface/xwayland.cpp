@@ -81,7 +81,8 @@ static void handle_xwayland_surface_map(struct wl_listener *listener,
   wl_signal_add(&view->xwayland_surface->surface->events.commit, &view->commit);
 
   if (wlr_xwayland_or_surface_wants_focus(view->xwayland_surface)) {
-    view->focus();
+    /// TODO: seat could be different
+    view->desktop->seat->focus(view);
   } else {
     // focus would damage the view. If the view doesn't want focus, we damage it
     // anyway
@@ -111,8 +112,8 @@ void handle_xwayland_surface_destroy(struct wl_listener *listener, void *data) {
   }
 
   // we need to tell the desktop that this object doesnt exist anymore
-  if (view->desktop->focused_view == view) {
-    view->desktop->focused_view = nullptr;
+  if (view->desktop->seat->focused_view == view) {
+    view->desktop->seat->focused_view = nullptr;
   }
   if (view->desktop->seat->grabbed_view == view) {
     view->desktop->seat->grabbed_view = nullptr;

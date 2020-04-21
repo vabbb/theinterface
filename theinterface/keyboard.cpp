@@ -46,32 +46,32 @@ static bool ti_chvt(ti::server *server, uint32_t keysym) {
 }
 
 /// Start the alt+tab handler
-static bool ti_alt_tab(ti::desktop *desktop, uint32_t keysym) {
+static bool ti_alt_tab(ti::seat *seat, uint32_t keysym) {
   /* Cycle to the next view */
-  if (wl_list_length(&desktop->wem_views) < 2) {
+  if (wl_list_length(&seat->desktop->wem_views) < 2) {
     return false;
   }
   ti::view *current_view =
-      wl_container_of(desktop->wem_views.next, current_view, wem_link);
+      wl_container_of(seat->desktop->wem_views.next, current_view, wem_link);
   ti::view *next_view =
       wl_container_of(current_view->wem_link.next, next_view, wem_link);
-  next_view->focus();
+  seat->focus(next_view);
   /* Move the previous view to the end of the list */
   wl_list_remove(&current_view->wem_link);
-  wl_list_insert(desktop->wem_views.prev, &current_view->wem_link);
+  wl_list_insert(seat->desktop->wem_views.prev, &current_view->wem_link);
   return true;
 }
 
 /// alt+f4 handler
-static bool ti_alt_f4(ti::desktop *desktop, uint32_t keysym) {
+static bool ti_alt_f4(ti::seat *seat, uint32_t keysym) {
   bool ret = false;
   ti::view *current_view =
-      wl_container_of(desktop->wem_views.next, current_view, wem_link);
+      wl_container_of(seat->desktop->wem_views.next, current_view, wem_link);
 
-  if (wl_list_length(&desktop->wem_views) > 1) {
+  if (wl_list_length(&seat->desktop->wem_views) > 1) {
     ti::view *next_view =
         wl_container_of(current_view->wem_link.next, next_view, wem_link);
-    next_view->focus();
+    seat->focus(next_view);
   }
 
   return safe_kill(current_view->pid, SIGKILL);
@@ -82,9 +82,9 @@ static bool ti_alt_f4(ti::desktop *desktop, uint32_t keysym) {
  * processing keys, rather than passing them on to the client for its own
  * processing.
  */
-static bool handle_keybinding(ti::desktop *desktop, const xkb_keysym_t *syms,
+static bool handle_keybinding(ti::seat *seat, const xkb_keysym_t *syms,
                               uint32_t modifiers, size_t syms_len) {
-  ti::server *server = desktop->server;
+  ti::server *server = seat->desktop->server;
   xkb_keysym_t keysym;
   switch (modifiers) {
   case WLR_MODIFIER_LOGO: {
@@ -119,11 +119,11 @@ static bool handle_keybinding(ti::desktop *desktop, const xkb_keysym_t *syms,
       keysym = syms[i];
       switch (keysym) {
       case XKB_KEY_Tab: {
-        ti_alt_tab(desktop, keysym);
+        ti_alt_tab(seat, keysym);
         return true;
       }
       case XKB_KEY_F4: {
-        ti_alt_f4(desktop, keysym);
+        ti_alt_f4(seat, keysym);
         return true;
       }
       }
@@ -153,7 +153,7 @@ static void keyboard_handle_key(struct wl_listener *listener, void *data) {
   if (event->state == WLR_KEY_PRESSED) {
     /* If a key was _pressed_, we attempt to
      * process it as a compositor keybinding. */
-    handled = handle_keybinding(seat->desktop, syms, modifiers, nsyms);
+    handled = handle_keybinding(seat, syms, modifiers, nsyms);
   }
 
   if (!handled) {

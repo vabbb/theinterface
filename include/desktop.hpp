@@ -41,7 +41,6 @@ public:
 
   struct wl_listener new_input;
 
-  class ti::view *focused_view = nullptr;
   class ti::seat *seat;
 
   struct wlr_output_layout *output_layout;

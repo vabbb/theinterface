@@ -28,6 +28,8 @@ public:
   struct wl_listener cursor_axis;
   struct wl_listener cursor_frame;
 
+  class ti::view *focused_view = nullptr;
+
   int view_x = 0, view_y = 0;
 
   class view *grabbed_view = nullptr;
@@ -36,6 +38,9 @@ public:
   uint32_t resize_edges;
 
   void setup_xwayland_cursor(wlr_xwayland *xwayland);
+
+  /** NOTE: this function only deals with keyboard focus. */
+  void focus(ti::view *v);
 
   seat(ti::desktop *d);
   ~seat();

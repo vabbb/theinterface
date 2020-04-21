@@ -75,9 +75,6 @@ public:
   void get_deco_box(wlr_box &box);
   virtual std::string get_title() = 0;
 
-  /** NOTE: this function only deals with keyboard focus. */
-  void focus();
-
   virtual void for_each_surface(wlr_surface_iterator_func_t iterator,
                                 void *user_data) = 0;
   void damage_whole();

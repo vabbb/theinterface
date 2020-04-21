@@ -31,7 +31,8 @@ static void handle_xdg_surface_map(struct wl_listener *listener, void *data) {
   view->toplevel_handle = wlr_foreign_toplevel_handle_v1_create(
       view->desktop->foreign_toplevel_manager_v1);
 
-  view->focus();
+  /// TODO: seat could be different
+  view->desktop->seat->focus(view);
 }
 
 /** Called when the surface is unmapped, and should no longer be shown. */
@@ -56,8 +57,8 @@ static void handle_xdg_surface_destroy(struct wl_listener *listener,
   }
 
   // we need to tell the desktop that this object doesnt exist anymore
-  if (view->desktop->focused_view == view) {
-    view->desktop->focused_view = nullptr;
+  if (view->desktop->seat->focused_view == view) {
+    view->desktop->seat->focused_view = nullptr;
   }
   if (view->desktop->seat->grabbed_view == view) {
     view->desktop->seat->grabbed_view = nullptr;

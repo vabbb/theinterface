@@ -22,40 +22,6 @@ ti::view::view(enum view_type t, int32_t __x, int32_t __y) : type(t) {
 }
 ti::view::~view() {}
 
-void ti::view::focus() {
-  ti::view *prev_focus = desktop->focused_view;
-  if (prev_focus == this) {
-    return;
-  } else if (prev_focus) {
-    prev_focus->deactivate();
-  }
-
-  /* Move the view to the front */
-  if (was_ever_mapped) {
-    wl_list_remove(&wem_link);
-    wl_list_insert(&desktop->wem_views, &wem_link);
-  }
-  wl_list_remove(&link);
-  wl_list_insert(&desktop->views, &link);
-
-  this->damage_whole();
-
-  this->activate();
-  desktop->focused_view = this;
-
-  struct wlr_keyboard *keyboard =
-      wlr_seat_get_keyboard(desktop->seat->wlr_seat);
-
-  /*
-   * Tell the seat to have the keyboard enter this surface. wlroots will keep
-   * track of this and automatically send key events to the appropriate
-   * clients without additional work on your part.
-   */
-  wlr_seat_keyboard_notify_enter(desktop->seat->wlr_seat, this->surface,
-                                 keyboard->keycodes, keyboard->num_keycodes,
-                                 &keyboard->modifiers);
-}
-
 void ti::view::get_box(wlr_box &_box) {
   _box.x = box.x;
   _box.y = box.y;

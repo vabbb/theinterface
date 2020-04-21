@@ -197,7 +197,7 @@ void handle_cursor_button(struct wl_listener *listener, void *data) {
       return;
     }
     // focus view when you click on it
-    view->focus();
+    seat->focus(view);
   }
 }
 
