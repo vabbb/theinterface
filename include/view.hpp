@@ -33,7 +33,7 @@ public:
   uint32_t border_width, titlebar_height;
   bool decorated = false;
 
-  struct wlr_box box;
+  struct wlr_box box {};
   float rotation = 0.0;
   float alpha = 1.0;
 
@@ -49,7 +49,7 @@ public:
   struct wl_list link;     // ti::desktop::views
   struct wl_list wem_link; // ti::desktop::wem_views
   struct wl_list children; // ti::view_child::link
-  struct wlr_surface *surface;
+  struct wlr_surface *surface = nullptr;
 
   struct wl_listener set_title;
 

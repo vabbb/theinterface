@@ -36,7 +36,7 @@ static void handle_xdg_surface_map(struct wl_listener *listener, void *data) {
 
 /** Called when the surface is unmapped, and should no longer be shown. */
 static void handle_xdg_surface_unmap(struct wl_listener *listener, void *data) {
-  ti::view *view = wl_container_of(listener, view, unmap);
+  ti::xdg_view *view = wl_container_of(listener, view, unmap);
   view->mapped = false;
   if (view->toplevel_handle) {
     wlr_foreign_toplevel_handle_v1_destroy(view->toplevel_handle);
@@ -48,15 +48,27 @@ static void handle_xdg_surface_unmap(struct wl_listener *listener, void *data) {
 /* Called when the surface is destroyed and should never be shown again. */
 static void handle_xdg_surface_destroy(struct wl_listener *listener,
                                        void *data) {
-  ti::view *view = wl_container_of(listener, view, destroy);
-  wl_list_remove(&view->link);
+  ti::xdg_view *view = wl_container_of(listener, view, destroy);
+
+  // if view is mapped, we call handle_xwayland_surface_unmap first
+  if (view->mapped) {
+    handle_xdg_surface_unmap(&view->unmap, &view->xdg_surface);
+  }
+
+  // we need to tell the desktop that this object doesnt exist anymore
+  if (view->desktop->focused_view == view) {
+    view->desktop->focused_view = nullptr;
+  }
+  if (view->desktop->grabbed_view == view) {
+    view->desktop->grabbed_view = nullptr;
+  }
 
   if (view->was_ever_mapped) {
     wl_list_remove(&view->wem_link);
   }
+  wl_list_remove(&view->link);
 
-  ti::xdg_view *v = dynamic_cast<ti::xdg_view *>(view);
-  delete v;
+  delete view;
 }
 
 /** This event is raised when a client would like to begin an interactive
@@ -92,7 +104,7 @@ void handle_new_xdg_surface(struct wl_listener *listener, void *data) {
   }
 
   /* Allocate a ti::view for this surface */
-  ti::xdg_view *view = new ti::xdg_view;
+  ti::xdg_view *view = new ti::xdg_view();
 
   view->desktop = desktop;
   view->xdg_surface = xdg_surface;

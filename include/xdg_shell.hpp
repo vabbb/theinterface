@@ -10,7 +10,7 @@ extern "C" {
 namespace ti {
 class xdg_view : public view {
 public:
-  struct wlr_xdg_surface *xdg_surface;
+  struct wlr_xdg_surface *xdg_surface = nullptr;
 
   struct wl_listener set_app_id;
 

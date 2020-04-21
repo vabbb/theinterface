@@ -93,8 +93,6 @@ static void handle_xwayland_surface_unmap(struct wl_listener *listener,
                                           void *data) {
   ti::xwayland_view *view = wl_container_of(listener, view, unmap);
   view->mapped = false;
-  view->box.width = view->box.height = 0;
-
   if (view->toplevel_handle) {
     wlr_foreign_toplevel_handle_v1_destroy(view->toplevel_handle);
     view->toplevel_handle = NULL;
@@ -111,14 +109,20 @@ void handle_xwayland_surface_destroy(struct wl_listener *listener, void *data) {
     handle_xwayland_surface_unmap(&view->unmap, &view->xwayland_surface);
   }
 
-  wl_list_remove(&view->link);
+  // we need to tell the desktop that this object doesnt exist anymore
+  if (view->desktop->focused_view == view) {
+    view->desktop->focused_view = nullptr;
+  }
+  if (view->desktop->grabbed_view == view) {
+    view->desktop->grabbed_view = nullptr;
+  }
 
   if (view->was_ever_mapped) {
     wl_list_remove(&view->wem_link);
   }
+  wl_list_remove(&view->link);
 
-  ti::xwayland_view *v = dynamic_cast<ti::xwayland_view *>(view);
-  delete v;
+  delete view;
 }
 
 /** called on title change */
@@ -152,7 +156,7 @@ void handle_new_xwayland_surface(struct wl_listener *listener, void *data) {
           xwayland_surface->title, xwayland_surface->c_class);
 
   /* Allocate a ti::view for this surface */
-  ti::xwayland_view *view = new ti::xwayland_view;
+  ti::xwayland_view *view = new ti::xwayland_view();
   view->desktop = desktop;
   view->xwayland_surface = xwayland_surface;
 
