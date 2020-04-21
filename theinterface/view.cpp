@@ -136,6 +136,11 @@ void ti::view::damage_whole() {
 }
 
 void ti::view::render(ti::output *output, ti::render_data *data) {
+  // don't render unmapped views
+  if (!this->mapped) {
+    return;
+  }
+
   this->render_decorations(output, data);
   output->view_for_each_surface(this, render_surface_iterator, data);
 }
