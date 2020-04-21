@@ -8,11 +8,11 @@
 #include "seat.hpp"
 
 void seat_request_cursor(struct wl_listener *listener, void *data) {
-  ti::desktop *desktop = wl_container_of(listener, desktop, request_cursor);
+  ti::seat *seat = wl_container_of(listener, seat, request_cursor);
   struct wlr_seat_pointer_request_set_cursor_event *event =
       reinterpret_cast<wlr_seat_pointer_request_set_cursor_event *>(data);
   struct wlr_seat_client *focused_client =
-      desktop->seat->pointer_state.focused_client;
+      seat->wlr_seat->pointer_state.focused_client;
   /* This can be sent by any client, so we check to make sure this one is
    * actually has pointer focus first. */
   if (focused_client == event->seat_client) {
@@ -20,7 +20,7 @@ void seat_request_cursor(struct wl_listener *listener, void *data) {
      * provided surface as the cursor image. It will set the hardware cursor
      * on the output that it's currently on and continue to do so as the
      * cursor moves between outputs. */
-    wlr_cursor_set_surface(desktop->cursor, event->surface, event->hotspot_x,
+    wlr_cursor_set_surface(seat->cursor, event->surface, event->hotspot_x,
                            event->hotspot_y);
   }
 }
@@ -71,3 +71,75 @@ ti::view *desktop_view_at(ti::desktop *desktop, double lx, double ly,
   }
   return NULL;
 }
+
+ti::seat::seat(ti::desktop *d) {
+  this->desktop = d;
+
+  /*
+   * Creates a cursor, which is a wlroots utility for tracking the cursor
+   * image shown on screen.
+   */
+  this->cursor = wlr_cursor_create();
+  wlr_cursor_attach_output_layout(this->cursor, desktop->output_layout);
+
+  /* Creates an xcursor manager, another wlroots utility which loads up
+   * Xcursor themes to source cursor images from and makes sure that cursor
+   * images are available at all scale factors on the screen (necessary for
+   * HiDPI support). We add a cursor theme at scale factor 1 to begin with. */
+  this->cursor_mgr = wlr_xcursor_manager_create(nullptr, 24);
+  wlr_xcursor_manager_load(this->cursor_mgr, 1);
+
+  /*
+   * wlr_cursor *only* displays an image on screen. It does not move around
+   * when the pointer moves. However, we can attach input devices to it, and
+   * it will generate aggregate events for all of them. In these events, we
+   * can choose how we want to process them, forwarding them to clients and
+   * moving the cursor around. More detail on this process is described in my
+   * input handling blog post:
+   *
+   * https://drewdevault.com/2018/07/17/Input-handling-in-wlroots.html
+   *
+   * And more comments are sprinkled throughout the notify functions above.
+   */
+  this->cursor_motion.notify = handle_cursor_motion;
+  wl_signal_add(&this->cursor->events.motion, &this->cursor_motion);
+  this->cursor_motion_absolute.notify = handle_cursor_motion_absolute;
+  wl_signal_add(&this->cursor->events.motion_absolute,
+                &this->cursor_motion_absolute);
+  this->cursor_button.notify = handle_cursor_button;
+  wl_signal_add(&this->cursor->events.button, &this->cursor_button);
+  this->cursor_axis.notify = handle_cursor_axis;
+  wl_signal_add(&this->cursor->events.axis, &this->cursor_axis);
+  this->cursor_frame.notify = handle_cursor_frame;
+  wl_signal_add(&this->cursor->events.frame, &this->cursor_frame);
+
+  /*
+   * Configures a seat, which is a single "seat" at which a user sits and
+   * operates the computer. This conceptually includes up to one keyboard,
+   * pointer, touch, and drawing tablet device. We also rig up a listener to
+   * let us know when new input devices are available on the backend.
+   */
+  wl_list_init(&this->keyboards);
+
+  this->wlr_seat = wlr_seat_create(desktop->server->display, "seat0");
+  this->request_cursor.notify = seat_request_cursor;
+  wl_signal_add(&this->wlr_seat->events.request_set_cursor,
+                &this->request_cursor);
+}
+
+void ti::seat::setup_xwayland_cursor(wlr_xwayland *xwayland) {
+#ifdef WLR_HAS_XWAYLAND
+  this->xwayland_xcursor_manager = wlr_xcursor_manager_create(nullptr, 24);
+  wlr_xcursor_manager_load(this->xwayland_xcursor_manager, 1);
+  this->xcursor = wlr_xcursor_manager_get_xcursor(
+      this->xwayland_xcursor_manager, "left_ptr", 1);
+  if (this->xcursor != NULL) {
+    struct wlr_xcursor_image *image = this->xcursor->images[0];
+    wlr_xwayland_set_cursor(xwayland, image->buffer, image->width * 4,
+                            image->width, image->height, image->hotspot_x,
+                            image->hotspot_y);
+  }
+#endif
+}
+
+ti::seat::~seat() {}

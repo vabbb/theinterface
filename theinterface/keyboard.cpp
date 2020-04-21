@@ -9,6 +9,7 @@ extern "C" {
 
 #include "desktop.hpp"
 #include "keyboard.hpp"
+#include "seat.hpp"
 #include "server.hpp"
 #include "util.hpp"
 #include "xdg_shell.hpp"
@@ -24,9 +25,9 @@ static void handle_keyboard_modifiers(struct wl_listener *listener,
    * same seat. You can swap out the underlying wlr_keyboard like this and
    * wlr_seat handles this transparently.
    */
-  wlr_seat_set_keyboard(keyboard->desktop->seat, keyboard->device);
+  wlr_seat_set_keyboard(keyboard->seat->wlr_seat, keyboard->device);
   /* Send modifiers to the client. */
-  wlr_seat_keyboard_notify_modifiers(keyboard->desktop->seat,
+  wlr_seat_keyboard_notify_modifiers(keyboard->seat->wlr_seat,
                                      &keyboard->device->keyboard->modifiers);
 }
 
@@ -136,10 +137,9 @@ static bool handle_keybinding(ti::desktop *desktop, const xkb_keysym_t *syms,
 static void keyboard_handle_key(struct wl_listener *listener, void *data) {
   /* This event is raised when a key is pressed or released. */
   ti::keyboard *keyboard = wl_container_of(listener, keyboard, key);
-  ti::desktop *desktop = keyboard->desktop;
+  ti::seat *seat = keyboard->seat;
   struct wlr_event_keyboard_key *event =
       reinterpret_cast<struct wlr_event_keyboard_key *>(data);
-  struct wlr_seat *seat = desktop->seat;
 
   /* Translate libinput keycode -> xkbcommon */
   uint32_t keycode = event->keycode + 8;
@@ -153,20 +153,20 @@ static void keyboard_handle_key(struct wl_listener *listener, void *data) {
   if (event->state == WLR_KEY_PRESSED) {
     /* If a key was _pressed_, we attempt to
      * process it as a compositor keybinding. */
-    handled = handle_keybinding(desktop, syms, modifiers, nsyms);
+    handled = handle_keybinding(seat->desktop, syms, modifiers, nsyms);
   }
 
   if (!handled) {
     /* Otherwise, we pass it along to the client. */
-    wlr_seat_set_keyboard(seat, keyboard->device);
-    wlr_seat_keyboard_notify_key(seat, event->time_msec, event->keycode,
-                                 event->state);
+    wlr_seat_set_keyboard(seat->wlr_seat, keyboard->device);
+    wlr_seat_keyboard_notify_key(seat->wlr_seat, event->time_msec,
+                                 event->keycode, event->state);
   }
 }
 
 void ti::desktop::new_keyboard(struct wlr_input_device *device) {
-  ti::keyboard *keyboard = new ti::keyboard;
-  keyboard->desktop = this;
+  ti::keyboard *keyboard = new ti::keyboard{};
+  keyboard->seat = this->seat;
   keyboard->device = device;
 
   /* We need to prepare an XKB keymap and assign it to the keyboard. This
@@ -191,8 +191,8 @@ void ti::desktop::new_keyboard(struct wlr_input_device *device) {
   keyboard->key.notify = keyboard_handle_key;
   wl_signal_add(&device->keyboard->events.key, &keyboard->key);
 
-  wlr_seat_set_keyboard(this->seat, device);
+  wlr_seat_set_keyboard(this->seat->wlr_seat, device);
 
   /* And add the keyboard to our list of keyboards */
-  wl_list_insert(&this->keyboards, &keyboard->link);
+  wl_list_insert(&this->seat->keyboards, &keyboard->link);
 }

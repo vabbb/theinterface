@@ -8,6 +8,7 @@ extern "C" {
 #include "server.hpp"
 
 #include "desktop.hpp"
+#include "seat.hpp"
 
 #include "xwayland.hpp"
 
@@ -113,8 +114,8 @@ void handle_xwayland_surface_destroy(struct wl_listener *listener, void *data) {
   if (view->desktop->focused_view == view) {
     view->desktop->focused_view = nullptr;
   }
-  if (view->desktop->grabbed_view == view) {
-    view->desktop->grabbed_view = nullptr;
+  if (view->desktop->seat->grabbed_view == view) {
+    view->desktop->seat->grabbed_view = nullptr;
   }
 
   if (view->was_ever_mapped) {

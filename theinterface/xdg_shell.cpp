@@ -59,8 +59,8 @@ static void handle_xdg_surface_destroy(struct wl_listener *listener,
   if (view->desktop->focused_view == view) {
     view->desktop->focused_view = nullptr;
   }
-  if (view->desktop->grabbed_view == view) {
-    view->desktop->grabbed_view = nullptr;
+  if (view->desktop->seat->grabbed_view == view) {
+    view->desktop->seat->grabbed_view = nullptr;
   }
 
   if (view->was_ever_mapped) {

@@ -15,6 +15,7 @@ extern "C" {
 
 namespace ti {
 class server;
+class seat;
 enum cursor_mode;
 
 class desktop {
@@ -28,8 +29,6 @@ public:
 #ifdef WLR_HAS_XWAYLAND
   struct wlr_xwayland *xwayland;
   struct wl_listener new_xwayland_surface;
-  struct wlr_xcursor *xcursor;
-  struct wlr_xcursor_manager *xwayland_xcursor_manager;
 #endif
 
   struct wl_list views;
@@ -41,26 +40,9 @@ public:
   struct wlr_foreign_toplevel_manager_v1 *foreign_toplevel_manager_v1;
 
   struct wl_listener new_input;
-  struct wlr_cursor *cursor;
-  struct wlr_xcursor_manager *cursor_mgr;
-  struct wl_listener cursor_motion;
-  struct wl_listener cursor_motion_absolute;
-  struct wl_listener cursor_button;
-  struct wl_listener cursor_axis;
-  struct wl_listener cursor_frame;
-  int view_x = 0, view_y = 0;
 
-  struct wlr_seat *seat;
-  struct wl_listener request_cursor;
-  struct wl_list keyboards;
-  enum ti::cursor_mode cursor_mode;
-
-  class view *focused_view = nullptr;
-
-  class view *grabbed_view = nullptr;
-  double grab_x = 0, grab_y = 0;
-  int grab_width, grab_height;
-  uint32_t resize_edges;
+  class ti::view *focused_view = nullptr;
+  class ti::seat *seat;
 
   struct wlr_output_layout *output_layout;
   struct wl_list outputs;

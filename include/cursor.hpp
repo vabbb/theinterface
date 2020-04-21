@@ -7,7 +7,7 @@ enum cursor_mode {
   CURSOR_MOVE,
   CURSOR_RESIZE,
 };
-}
+} // namespace ti
 
 /** This event is raised by the backend when a new input device becomes
  * available. */

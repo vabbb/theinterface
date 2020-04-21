@@ -2,10 +2,10 @@
 #define TI_KEYBOARD_HPP
 
 namespace ti {
-class desktop;
+class seat;
 struct keyboard {
   struct wl_list link;
-  ti::desktop *desktop;
+  ti::seat *seat;
   struct wlr_input_device *device;
 
   struct wl_listener modifiers;

@@ -9,6 +9,7 @@ extern "C" {
 #include "desktop.hpp"
 #include "output.hpp"
 #include "render.hpp"
+#include "seat.hpp"
 #include "server.hpp"
 
 #include "view.hpp"
@@ -42,14 +43,15 @@ void ti::view::focus() {
   this->activate();
   desktop->focused_view = this;
 
-  struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(desktop->seat);
+  struct wlr_keyboard *keyboard =
+      wlr_seat_get_keyboard(desktop->seat->wlr_seat);
 
   /*
    * Tell the seat to have the keyboard enter this surface. wlroots will keep
    * track of this and automatically send key events to the appropriate
    * clients without additional work on your part.
    */
-  wlr_seat_keyboard_notify_enter(desktop->seat, this->surface,
+  wlr_seat_keyboard_notify_enter(desktop->seat->wlr_seat, this->surface,
                                  keyboard->keycodes, keyboard->num_keycodes,
                                  &keyboard->modifiers);
 }
@@ -85,12 +87,13 @@ void ti::view::update_position(int32_t __x, int32_t __y) {
 }
 
 void ti::view::begin_interactive(ti::cursor_mode mode, uint32_t edges) {
-  if (surface != desktop->seat->pointer_state.focused_surface) {
+  ti::seat *seat = this->desktop->seat;
+  if (surface != seat->wlr_seat->pointer_state.focused_surface) {
     /* Deny move/resize requests from unfocused clients. */
     return;
   }
-  desktop->grabbed_view = this;
-  desktop->cursor_mode = mode;
+  seat->grabbed_view = this;
+  seat->cursor_mode = mode;
   struct wlr_box geo_box;
   switch (type) {
   case ti::XDG_SHELL_VIEW: {
@@ -106,19 +109,19 @@ void ti::view::begin_interactive(ti::cursor_mode mode, uint32_t edges) {
   }
   }
 
-  desktop->view_x = box.x;
-  desktop->view_y = box.y;
+  seat->view_x = box.x;
+  seat->view_y = box.y;
 
   if (mode == ti::CURSOR_MOVE) {
-    desktop->grab_x = desktop->cursor->x - box.x;
-    desktop->grab_y = desktop->cursor->y - box.y;
+    seat->grab_x = seat->cursor->x - box.x;
+    seat->grab_y = seat->cursor->y - box.y;
   } else {
-    desktop->grab_x = desktop->cursor->x;
-    desktop->grab_y = desktop->cursor->y;
+    seat->grab_x = seat->cursor->x;
+    seat->grab_y = seat->cursor->y;
   }
-  desktop->grab_width = geo_box.width;
-  desktop->grab_height = geo_box.height;
-  desktop->resize_edges = edges;
+  seat->grab_width = geo_box.width;
+  seat->grab_height = geo_box.height;
+  seat->resize_edges = edges;
 }
 
 void ti::view::damage_partial() {
