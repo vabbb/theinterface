@@ -137,8 +137,7 @@ static void keyboard_handle_key(struct wl_listener *listener, void *data) {
   /* This event is raised when a key is pressed or released. */
   ti::keyboard *keyboard = wl_container_of(listener, keyboard, key);
   ti::seat *seat = keyboard->seat;
-  struct wlr_event_keyboard_key *event =
-      reinterpret_cast<struct wlr_event_keyboard_key *>(data);
+  auto *event = reinterpret_cast<struct wlr_event_keyboard_key *>(data);
 
   /* Translate libinput keycode -> xkbcommon */
   unsigned keycode = event->keycode + 8;

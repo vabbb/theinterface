@@ -184,7 +184,7 @@ static void surface_send_frame_done_iterator(ti::output *output,
                                              struct wlr_surface *surface,
                                              struct wlr_box *box,
                                              float rotation, void *data) {
-  struct timespec *when = reinterpret_cast<struct timespec *>(data);
+  auto *when = reinterpret_cast<const struct timespec *>(data);
   wlr_surface_send_frame_done(surface, when);
 }
 
@@ -287,7 +287,7 @@ buffer_damage_finish:
 
 void handle_new_output(struct wl_listener *listener, void *data) {
   ti::desktop *desktop = wl_container_of(listener, desktop, new_output);
-  struct wlr_output *wlr_output = reinterpret_cast<struct wlr_output *>(data);
+  auto *wlr_output = reinterpret_cast<struct wlr_output *>(data);
 
   /* Some backends don't have modes. DRM+KMS does, and we need to set a mode
    * before we can use the output. The mode is a tuple of (width, height,

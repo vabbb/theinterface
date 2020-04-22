@@ -61,12 +61,12 @@ void ti::view::begin_interactive(ti::cursor_mode mode, unsigned edges) {
   struct wlr_box geo_box;
   switch (type) {
   case ti::XDG_SHELL_VIEW: {
-    ti::xdg_view *v = dynamic_cast<ti::xdg_view *>(this);
+    auto *v = dynamic_cast<ti::xdg_view *>(this);
     wlr_xdg_surface_get_geometry(v->xdg_surface, &geo_box);
     break;
   }
   case ti::XWAYLAND_VIEW: {
-    ti::xwayland_view *v = dynamic_cast<ti::xwayland_view *>(this);
+    auto *v = dynamic_cast<ti::xwayland_view *>(this);
     geo_box.width = v->xwayland_surface->width;
     geo_box.height = v->xwayland_surface->height;
     break;

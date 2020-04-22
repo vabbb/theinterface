@@ -35,7 +35,7 @@ static void handle_xwayland_surface_commit(struct wl_listener *listener,
 static void handle_xwayland_surface_map(struct wl_listener *listener,
                                         void *data) {
   ti::xwayland_view *view = wl_container_of(listener, view, map);
-  struct wlr_xwayland_surface *xwayland_surface =
+  auto *xwayland_surface =
       reinterpret_cast<struct wlr_xwayland_surface *>(data);
 
   if (xwayland_surface->override_redirect) {
@@ -49,8 +49,7 @@ static void handle_xwayland_surface_map(struct wl_listener *listener,
 
   if (view->was_ever_mapped == false) {
     view->was_ever_mapped = true;
-    ti::view *v = dynamic_cast<ti::view *>(view);
-    wl_list_insert(&v->desktop->wem_views, &v->wem_link);
+    wl_list_insert(&view->desktop->wem_views, &view->wem_link);
   }
 
   view->box.width = xwayland_surface->width;
@@ -133,7 +132,7 @@ static void handle_set_title(struct wl_listener *listener, void *data) {
 
 static void handle_request_configure(struct wl_listener *listener, void *data) {
   ti::xwayland_view *view = wl_container_of(listener, view, request_configure);
-  struct wlr_xwayland_surface_configure_event *event =
+  auto *event =
       reinterpret_cast<struct wlr_xwayland_surface_configure_event *>(data);
 
   wlr_xwayland_surface_configure(view->xwayland_surface, event->x, event->y,
@@ -143,7 +142,7 @@ static void handle_request_configure(struct wl_listener *listener, void *data) {
 void handle_new_xwayland_surface(struct wl_listener *listener, void *data) {
   ti::desktop *desktop =
       wl_container_of(listener, desktop, new_xwayland_surface);
-  struct wlr_xwayland_surface *xwayland_surface =
+  auto *xwayland_surface =
       reinterpret_cast<struct wlr_xwayland_surface *>(data);
 
   if (xwayland_surface->override_redirect) {
@@ -181,8 +180,7 @@ void handle_new_xwayland_surface(struct wl_listener *listener, void *data) {
                 &view->request_resize);
 
   /* Add it to the list of views. */
-  ti::view *v = dynamic_cast<ti::view *>(view);
-  wl_list_insert(&desktop->views, &v->link);
+  wl_list_insert(&desktop->views, &view->link);
 }
 
 std::string ti::xwayland_view::get_title() {

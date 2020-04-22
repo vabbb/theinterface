@@ -7,7 +7,7 @@
 
 void seat_request_cursor(struct wl_listener *listener, void *data) {
   ti::seat *seat = wl_container_of(listener, seat, request_cursor);
-  struct wlr_seat_pointer_request_set_cursor_event *event =
+  auto *event =
       reinterpret_cast<wlr_seat_pointer_request_set_cursor_event *>(data);
   struct wlr_seat_client *focused_client =
       seat->wlr_seat->pointer_state.focused_client;
@@ -33,14 +33,14 @@ bool view_at(ti::view *view, double lx, double ly, struct wlr_surface **surface,
 
   switch (view->type) {
   case ti::XDG_SHELL_VIEW: {
-    ti::xdg_view *v = dynamic_cast<ti::xdg_view *>(view);
+    auto *v = dynamic_cast<ti::xdg_view *>(view);
     // auto *state = &v->xdg_surface->surface->current;
     _surface = wlr_xdg_surface_surface_at(v->xdg_surface, view_sx, view_sy,
                                           &_sx, &_sy);
     break;
   }
   case ti::XWAYLAND_VIEW: {
-    ti::xwayland_view *v = dynamic_cast<ti::xwayland_view *>(view);
+    auto *v = dynamic_cast<ti::xwayland_view *>(view);
     if (v->surface) {
       _surface =
           wlr_surface_surface_at(v->surface, view_sx, view_sy, &_sx, &_sy);

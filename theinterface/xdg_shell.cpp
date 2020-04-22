@@ -22,8 +22,7 @@ static void handle_xdg_surface_map(struct wl_listener *listener, void *data) {
 
   if (view->was_ever_mapped == false) {
     view->was_ever_mapped = true;
-    ti::view *v = dynamic_cast<ti::view *>(view);
-    wl_list_insert(&v->desktop->wem_views, &v->wem_link);
+    wl_list_insert(&view->desktop->wem_views, &view->wem_link);
   }
 
   view->toplevel_handle = wlr_foreign_toplevel_handle_v1_create(
@@ -96,8 +95,7 @@ static void handle_xdg_toplevel_request_resize(struct wl_listener *listener,
 
 void handle_new_xdg_surface(struct wl_listener *listener, void *data) {
   ti::desktop *desktop = wl_container_of(listener, desktop, new_xdg_surface);
-  struct wlr_xdg_surface *xdg_surface =
-      reinterpret_cast<struct wlr_xdg_surface *>(data);
+  auto *xdg_surface = reinterpret_cast<struct wlr_xdg_surface *>(data);
   if (xdg_surface->role != WLR_XDG_SURFACE_ROLE_TOPLEVEL) {
     return;
   }
@@ -137,8 +135,7 @@ void handle_new_xdg_surface(struct wl_listener *listener, void *data) {
   wl_signal_add(&toplevel->events.request_resize, &view->request_resize);
 
   /* Add it to the list of views. */
-  ti::view *v = dynamic_cast<ti::view *>(view);
-  wl_list_insert(&desktop->views, &v->link);
+  wl_list_insert(&desktop->views, &view->link);
 }
 
 std::string ti::xdg_view::get_title() {

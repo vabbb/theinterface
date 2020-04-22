@@ -18,8 +18,7 @@ void ti::seat::new_pointer(struct wlr_input_device *device) {
 
 void handle_new_input(struct wl_listener *listener, void *data) {
   ti::desktop *desktop = wl_container_of(listener, desktop, new_input);
-  struct wlr_input_device *device =
-      reinterpret_cast<struct wlr_input_device *>(data);
+  auto *device = reinterpret_cast<struct wlr_input_device *>(data);
 
   /// TODO: pick the right seat
   ti::seat *seat = desktop->seat;
@@ -94,12 +93,12 @@ static void process_cursor_resize(ti::seat *seat, unsigned time) {
 
   switch (view->type) {
   case ti::XDG_SHELL_VIEW: {
-    ti::xdg_view *v = dynamic_cast<ti::xdg_view *>(view);
+    auto *v = dynamic_cast<ti::xdg_view *>(view);
     wlr_xdg_toplevel_set_size(v->xdg_surface, width, height);
     break;
   }
   case ti::XWAYLAND_VIEW: {
-    ti::xwayland_view *v = dynamic_cast<ti::xwayland_view *>(view);
+    auto *v = dynamic_cast<ti::xwayland_view *>(view);
     wlr_xwayland_surface_configure(v->xwayland_surface, x, y, width, height);
     break;
   }
@@ -176,8 +175,7 @@ void handle_cursor_motion_absolute(struct wl_listener *listener, void *data) {
 
 void handle_cursor_button(struct wl_listener *listener, void *data) {
   ti::seat *seat = wl_container_of(listener, seat, cursor_button);
-  struct wlr_event_pointer_button *event =
-      reinterpret_cast<struct wlr_event_pointer_button *>(data);
+  auto *event = reinterpret_cast<struct wlr_event_pointer_button *>(data);
   /* Notify the client with pointer focus that a button press has occurred */
   wlr_seat_pointer_notify_button(seat->wlr_seat, event->time_msec,
                                  event->button, event->state);
