@@ -5,8 +5,6 @@ extern "C" {
 }
 
 #include "cursor.hpp"
-#include "server.hpp"
-
 #include "desktop.hpp"
 #include "seat.hpp"
 

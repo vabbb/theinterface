@@ -2,15 +2,13 @@ extern "C" {
 #include <wlr/types/wlr_xdg_shell.h>
 }
 
-#include "output.hpp"
-#include "xdg_shell.hpp"
-#include "xwayland.hpp"
-
 #include "desktop.hpp"
 #include "output.hpp"
 #include "render.hpp"
 #include "seat.hpp"
 #include "server.hpp"
+#include "xdg_shell.hpp"
+#include "xwayland.hpp"
 
 #include "view.hpp"
 

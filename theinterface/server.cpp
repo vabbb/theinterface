@@ -1,7 +1,5 @@
 extern "C" {
 #include <wlr/backend.h>
-
-#include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_foreign_toplevel_management_v1.h>
 #include <wlr/util/log.h>
 #define static
@@ -9,7 +7,6 @@ extern "C" {
 #undef static
 }
 
-#include "output.hpp"
 #include "seat.hpp"
 
 #include "server.hpp"

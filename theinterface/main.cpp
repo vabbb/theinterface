@@ -1,22 +1,15 @@
-#include <cstdio>
-#include <cstdlib>
 #include <getopt.h>
 #include <unistd.h>
 
 extern "C" {
-#include <wayland-server-core.h>
-#include <wayland-util.h>
-#include <xf86drm.h>
-
-#include <wlr/backend/interface.h>
-
 #include <wlr/backend.h>
+#include <wlr/backend/interface.h>
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/util/log.h>
+#include <xf86drm.h>
 }
 
 #include "cursor.hpp"
-
 #include "server.hpp"
 #include "util.hpp"
 

@@ -1,5 +1,3 @@
-#include <cstdlib>
-
 #include "cursor.hpp"
 #include "server.hpp"
 #include "xdg_shell.hpp"

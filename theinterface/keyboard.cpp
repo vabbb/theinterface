@@ -1,5 +1,4 @@
 #include <csignal>
-#include <cstdlib>
 
 extern "C" {
 #include <wlr/backend/multi.h>
@@ -8,11 +7,12 @@ extern "C" {
 }
 
 #include "desktop.hpp"
-#include "keyboard.hpp"
 #include "seat.hpp"
 #include "server.hpp"
 #include "util.hpp"
 #include "xdg_shell.hpp"
+
+#include "keyboard.hpp"
 
 /** This event is raised when a modifier key, such as shift or alt, is
  * pressed. We simply communicate this to the client. */
@@ -170,11 +170,7 @@ void ti::seat::new_keyboard(struct wlr_input_device *device) {
 
   /* We need to prepare an XKB keymap and assign it to the keyboard. This
    * assumes the defaults (e.g. layout = "us"). */
-  struct xkb_rule_names rules = {.rules = nullptr,
-                                 .model = nullptr,
-                                 .layout = nullptr,
-                                 .variant = nullptr,
-                                 .options = nullptr};
+  struct xkb_rule_names rules = {};
   struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
   struct xkb_keymap *keymap =
       xkb_map_new_from_names(context, &rules, XKB_KEYMAP_COMPILE_NO_FLAGS);

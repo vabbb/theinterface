@@ -1,17 +1,16 @@
-#include <cstdlib>
-
 extern "C" {
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/util/log.h>
 }
 
-#include "cursor.hpp"
 #include "desktop.hpp"
 #include "keyboard.hpp"
 #include "seat.hpp"
 #include "server.hpp"
 #include "xdg_shell.hpp"
 #include "xwayland.hpp"
+
+#include "cursor.hpp"
 
 void ti::seat::new_pointer(struct wlr_input_device *device) {
   wlr_cursor_attach_input_device(this->cursor, device);

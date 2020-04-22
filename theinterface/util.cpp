@@ -1,5 +1,3 @@
-#include <algorithm>
-#include <cstdio>
 #include <fcntl.h> //needed for open
 #include <libudev.h>
 #include <string>

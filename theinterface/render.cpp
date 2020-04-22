@@ -1,5 +1,3 @@
-#include <cmath>
-
 extern "C" {
 #include <wlr/backend.h>
 
@@ -13,9 +11,10 @@ extern "C" {
 
 #include "desktop.hpp"
 #include "output.hpp"
-#include "render.hpp"
 #include "server.hpp"
 #include "xdg_shell.hpp"
+
+#include "render.hpp"
 
 void scissor_output(struct wlr_output *wlr_output, pixman_box32_t *rect) {
   struct wlr_renderer *renderer = wlr_backend_get_renderer(wlr_output->backend);

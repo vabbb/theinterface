@@ -11,15 +11,14 @@ extern "C" {
 #undef static
 }
 
-#include "output.hpp"
+#include "desktop.hpp"
 #include "render.hpp"
+#include "server.hpp"
 #include "util.hpp"
 #include "view.hpp"
 #include "xdg_shell.hpp"
 
-#include "server.hpp"
-
-#include "desktop.hpp"
+#include "output.hpp"
 
 /**
  * Rotate a child's position relative to a parent. The parent size is (pw, ph),

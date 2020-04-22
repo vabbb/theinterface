@@ -7,8 +7,6 @@ extern "C" {
 
 #include "seat.hpp"
 
-#include "server.hpp"
-
 #include "xdg_shell.hpp"
 
 static void handle_xdg_surface_commit(struct wl_listener *listener,

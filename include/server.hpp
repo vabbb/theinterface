@@ -5,8 +5,8 @@ extern "C" {
 #include <wlr/backend.h>
 #include <wlr/types/wlr_data_device.h>
 }
-namespace ti {
 
+namespace ti {
 class view;
 class desktop;
 

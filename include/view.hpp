@@ -7,7 +7,6 @@ extern "C" {
 #include <wayland-util.h>
 
 #include <wlr/config.h>
-#include <wlr/types/wlr_box.h>
 #include <wlr/types/wlr_foreign_toplevel_management_v1.h>
 #include <wlr/types/wlr_surface.h>
 }

@@ -2,10 +2,10 @@
 #define TI_SEAT_HPP
 
 #include "desktop.hpp"
-#include "view.hpp"
 
 namespace ti {
 class desktop;
+class view;
 class seat {
 public:
   class ti::desktop *desktop;
