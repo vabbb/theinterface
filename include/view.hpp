@@ -88,6 +88,16 @@ public:
    * compositor stops propegating pointer events to clients and instead consumes
    * them itself, to move or resize windows. */
   void begin_interactive(ti::cursor_mode mode, unsigned edges);
+
+  /*
+   * XDG toplevels may have nested surfaces, such as popup windows for context
+   * menus or tooltips. This function tests if any of those are underneath the
+   * coordinates lx and ly (in output Layout Coordinates). If so, it sets the
+   * surface pointer to that wlr_surface and the sx and sy coordinates to the
+   * coordinates relative to that surface's top-left corner.
+   */
+  bool at(double lx, double ly, struct wlr_surface **surface, double *sx,
+          double *sy);
 };
 } // namespace ti
 

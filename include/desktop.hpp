@@ -48,6 +48,11 @@ public:
   struct wl_listener new_output;
   struct wlr_presentation *presentation;
 
+  /** This iterates over all of our surfaces and attempts to find one under the
+   *  cursor. This relies on desktop->views being ordered from top-to-bottom. */
+  ti::view *view_at(double lx, double ly, struct wlr_surface **surface,
+                    double *sx, double *sy);
+
   desktop(ti::server *s);
   ~desktop();
 };

@@ -23,53 +23,6 @@ void seat_request_cursor(struct wl_listener *listener, void *data) {
   }
 }
 
-bool view_at(ti::view *view, double lx, double ly, struct wlr_surface **surface,
-             double *sx, double *sy) {
-  double view_sx = lx - view->box.x;
-  double view_sy = ly - view->box.y;
-
-  double _sx, _sy;
-  struct wlr_surface *_surface = nullptr;
-
-  switch (view->type) {
-  case ti::XDG_SHELL_VIEW: {
-    auto *v = dynamic_cast<ti::xdg_view *>(view);
-    // auto *state = &v->xdg_surface->surface->current;
-    _surface = wlr_xdg_surface_surface_at(v->xdg_surface, view_sx, view_sy,
-                                          &_sx, &_sy);
-    break;
-  }
-  case ti::XWAYLAND_VIEW: {
-    auto *v = dynamic_cast<ti::xwayland_view *>(view);
-    if (v->surface) {
-      _surface =
-          wlr_surface_surface_at(v->surface, view_sx, view_sy, &_sx, &_sy);
-    }
-    break;
-  }
-  }
-
-  if (_surface != NULL) {
-    *sx = _sx;
-    *sy = _sy;
-    *surface = _surface;
-    return true;
-  }
-  return false;
-}
-
-ti::view *desktop_view_at(ti::desktop *desktop, double lx, double ly,
-                          struct wlr_surface **surface, double *sx,
-                          double *sy) {
-  ti::view *view;
-  wl_list_for_each(view, &desktop->wem_views, wem_link) {
-    if (view_at(view, lx, ly, surface, sx, sy)) {
-      return view;
-    }
-  }
-  return NULL;
-}
-
 void ti::seat::focus(ti::view *v) {
   ti::view *prev_focus = this->focused_view;
   if (prev_focus == v) {

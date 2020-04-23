@@ -111,3 +111,38 @@ void ti::view::render(ti::output *output, ti::render_data *data) {
   this->render_decorations(output, data);
   output->view_for_each_surface(this, render_surface_iterator, data);
 }
+
+bool ti::view::at(double lx, double ly, struct wlr_surface **surface,
+                  double *sx, double *sy) {
+  double view_sx = lx - this->box.x;
+  double view_sy = ly - this->box.y;
+
+  double _sx, _sy;
+  struct wlr_surface *_surface = nullptr;
+
+  switch (this->type) {
+  case ti::XDG_SHELL_VIEW: {
+    auto *v = dynamic_cast<ti::xdg_view *>(this);
+    // auto *state = &v->xdg_surface->surface->current;
+    _surface = wlr_xdg_surface_surface_at(v->xdg_surface, view_sx, view_sy,
+                                          &_sx, &_sy);
+    break;
+  }
+  case ti::XWAYLAND_VIEW: {
+    auto *v = dynamic_cast<ti::xwayland_view *>(this);
+    if (v->surface) {
+      _surface =
+          wlr_surface_surface_at(v->surface, view_sx, view_sy, &_sx, &_sy);
+    }
+    break;
+  }
+  }
+
+  if (_surface != NULL) {
+    *sx = _sx;
+    *sy = _sy;
+    *surface = _surface;
+    return true;
+  }
+  return false;
+}

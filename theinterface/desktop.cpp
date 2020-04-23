@@ -7,6 +7,18 @@
 
 #include "desktop.hpp"
 
+ti::view *ti::desktop::view_at(double lx, double ly,
+                               struct wlr_surface **surface, double *sx,
+                               double *sy) {
+  ti::view *view;
+  wl_list_for_each(view, &this->wem_views, wem_link) {
+    if (view->at(lx, ly, surface, sx, sy)) {
+      return view;
+    }
+  }
+  return NULL;
+}
+
 ti::desktop::desktop(ti::server *s) {
   this->server = s;
 

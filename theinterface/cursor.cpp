@@ -119,8 +119,8 @@ static void process_cursor_motion(ti::seat *seat, unsigned time) {
   /* Otherwise, find the view under the pointer and send the event along. */
   double sx, sy;
   struct wlr_surface *surface = NULL;
-  ti::view *view = desktop_view_at(seat->desktop, seat->cursor->x,
-                                   seat->cursor->y, &surface, &sx, &sy);
+  ti::view *view = seat->desktop->view_at(seat->cursor->x, seat->cursor->y,
+                                          &surface, &sx, &sy);
   if (!view) {
     /* If there's no view under the cursor, set the cursor image to a
      * default. This is what makes the cursor image appear when you move it
@@ -181,8 +181,8 @@ void handle_cursor_button(struct wl_listener *listener, void *data) {
                                  event->button, event->state);
   double sx, sy;
   struct wlr_surface *surface = NULL;
-  ti::view *view = desktop_view_at(seat->desktop, seat->cursor->x,
-                                   seat->cursor->y, &surface, &sx, &sy);
+  ti::view *view = seat->desktop->view_at(seat->cursor->x, seat->cursor->y,
+                                          &surface, &sx, &sy);
   if (event->state == WLR_BUTTON_RELEASED) {
     /* If you released any buttons, we exit interactive move/resize mode. */
     seat->cursor_mode = ti::CURSOR_PASSTHROUGH;
