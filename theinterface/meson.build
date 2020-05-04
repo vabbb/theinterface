@@ -3,6 +3,7 @@ theinterface_sources = files(
   'desktop.cpp',
   'main.cpp',
   'keyboard.cpp',
+  'layer_shell.cpp',
   'output.cpp',
   'render.cpp',
   'seat.cpp',

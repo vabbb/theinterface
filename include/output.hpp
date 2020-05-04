@@ -34,6 +34,8 @@ struct output {
 
   struct wlr_output_damage *damage;
 
+  struct wl_list layers[4]; // layer_surface::link
+
   void get_decoration_box(ti::view &view, struct wlr_box &box);
   void damage_partial_view(ti::view *view);
   void for_each_surface(ti_surface_iterator_func_t iterator, void *user_data);

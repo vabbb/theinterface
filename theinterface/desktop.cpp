@@ -1,4 +1,5 @@
 #include "cursor.hpp"
+#include "layer_shell.hpp"
 #include "output.hpp"
 #include "seat.hpp"
 #include "server.hpp"
@@ -50,11 +51,16 @@ ti::desktop::desktop(ti::server *s) {
    * to dig your fingers in and play with their behavior if you want. */
   this->compositor = wlr_compositor_create(server->display, server->renderer);
 
+  this->seat = new ti::seat(this);
+
   this->xdg_shell = wlr_xdg_shell_create(server->display);
   this->new_xdg_surface.notify = handle_new_xdg_surface;
   wl_signal_add(&this->xdg_shell->events.new_surface, &this->new_xdg_surface);
 
-  this->seat = new ti::seat(this);
+  this->layer_shell = wlr_layer_shell_v1_create(server->display);
+  this->new_layer_shell_surface.notify = handle_new_layer_shell_surface;
+  wl_signal_add(&this->layer_shell->events.new_surface,
+                &this->new_layer_shell_surface);
 
   this->new_input.notify = handle_new_input;
   wl_signal_add(&this->server->backend->events.new_input, &this->new_input);

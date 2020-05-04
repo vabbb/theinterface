@@ -313,10 +313,11 @@ void handle_new_output(struct wl_listener *listener, void *data) {
   }
 
   /* Allocates and configures our state for this output */
-  ti::output *output = new ti::output;
+  ti::output *output = new ti::output{};
   output->wlr_output = wlr_output;
   output->desktop = desktop;
   output->damage = wlr_output_damage_create(wlr_output);
+  output->wlr_output->data = output; // data field points back to wrapper struct
 
   /* Sets up a listener for the frame notify event. */
   output->frame.notify = output_frame;

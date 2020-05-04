@@ -7,6 +7,10 @@ extern "C" {
 #include <wlr/types/wlr_presentation_time.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/types/wlr_xdg_shell.h>
+
+#define namespace c_namespace
+#include <wlr/types/wlr_layer_shell_v1.h>
+#undef namespace
 }
 
 #ifdef WLR_HAS_XWAYLAND
@@ -25,6 +29,9 @@ public:
 
   struct wlr_xdg_shell *xdg_shell;
   struct wl_listener new_xdg_surface;
+
+  struct wlr_layer_shell_v1 *layer_shell;
+  struct wl_listener new_layer_shell_surface;
 
 #ifdef WLR_HAS_XWAYLAND
   struct wlr_xwayland *xwayland;
