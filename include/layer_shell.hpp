@@ -9,10 +9,11 @@ extern "C" {
 }
 
 namespace ti {
+class output;
 class layer_view {
 public:
-  struct wlr_layer_surface_v1 *layer_surface;
-  struct wl_list link;
+  struct wlr_layer_surface_v1 *layer_surface; // *data points to wrapper class
+  struct wl_list link;                        // ti::layer_view
 
   struct wl_listener destroy;
   struct wl_listener map;
@@ -24,6 +25,7 @@ public:
   struct wlr_box geo;
   enum zwlr_layer_shell_v1_layer layer;
 
+  void update_cursor(ti::seat *seat);
   layer_view();
   ~layer_view();
 };
@@ -41,6 +43,8 @@ public:
   ~layer_popup();
 };
 } // namespace ti
+
+void arrange_layers(ti::output *output);
 
 void handle_new_layer_shell_surface(struct wl_listener *listener, void *data);
 #endif

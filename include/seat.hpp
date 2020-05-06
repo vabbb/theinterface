@@ -6,6 +6,7 @@
 namespace ti {
 class desktop;
 class view;
+class layer_view;
 class seat {
 public:
   class ti::desktop *desktop;
@@ -29,6 +30,7 @@ public:
   struct wl_listener cursor_frame;
 
   class ti::view *focused_view = nullptr;
+  class ti::layer_view *focused_layer = nullptr;
 
   int view_x = 0, view_y = 0;
 
@@ -41,6 +43,14 @@ public:
 
   /** NOTE: this function only deals with keyboard focus. */
   void focus(ti::view *v);
+
+  /**
+   * Focus semantics of layer surfaces are somewhat detached from the normal
+   * focus flow. For layers above the shell layer, for example, you cannot
+   * unfocus them. You also cannot alt-tab between layer surfaces and shell
+   * surfaces.
+   */
+  void set_focus_layer(wlr_layer_surface_v1 *layer_surface);
 
   void new_keyboard(struct wlr_input_device *device);
 

@@ -33,6 +33,8 @@ public:
   struct wlr_layer_shell_v1 *layer_shell;
   struct wl_listener new_layer_shell_surface;
 
+  struct zwlr_layer_surface_v1 *zwlr_layer_surface;
+
 #ifdef WLR_HAS_XWAYLAND
   struct wlr_xwayland *xwayland;
   struct wl_listener new_xwayland_surface;

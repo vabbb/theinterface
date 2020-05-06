@@ -106,7 +106,7 @@ static void process_cursor_resize(ti::seat *seat, unsigned time) {
   view->damage_whole();
 }
 
-static void process_cursor_motion(ti::seat *seat, unsigned time) {
+void process_cursor_motion(ti::seat *seat, unsigned time) {
   /* If the mode is non-passthrough, delegate to those functions. */
   if (seat->cursor_mode == ti::CURSOR_MOVE) {
     process_cursor_move(seat, time);

@@ -12,6 +12,7 @@ extern "C" {
 }
 
 #include "desktop.hpp"
+#include "layer_shell.hpp"
 #include "render.hpp"
 #include "server.hpp"
 #include "util.hpp"
@@ -324,6 +325,11 @@ void handle_new_output(struct wl_listener *listener, void *data) {
   wl_signal_add(&wlr_output->events.frame, &output->frame);
   wl_list_insert(&desktop->outputs, &output->link);
 
+  size_t len = sizeof(output->layers) / sizeof(output->layers[0]);
+  for (size_t i = 0; i < len; ++i) {
+    wl_list_init(&output->layers[i]);
+  }
+
   /* Adds this to the output layout. The add_auto function arranges outputs
    * from left-to-right in the order they appear. A more sophisticated
    * compositor would let the user configure the arrangement of outputs in the
@@ -333,6 +339,8 @@ void handle_new_output(struct wl_listener *listener, void *data) {
    * output (such as DPI, scale factor, manufacturer, etc).
    */
   wlr_output_layout_add_auto(desktop->output_layout, wlr_output);
+
+  arrange_layers(output);
 
   wlr_output_damage_add_whole(output->damage);
 }

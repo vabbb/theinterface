@@ -81,6 +81,22 @@ ti::desktop::desktop(ti::server *s) {
   wlr_xwayland_set_seat(this->xwayland, this->seat->wlr_seat);
 #endif
 
+  // struct wl_surface *wl_surface = wl_compositor_create_surface(compositor);
+  // this->zwlr_layer_surface = zwlr_layer_shell_v1_get_layer_surface(
+  //     layer_shell, wl_surface, wl_output, layer, namespace);
+  // assert(layer_surface);
+  // zwlr_layer_surface_v1_set_size(layer_surface, width, height);
+  // zwlr_layer_surface_v1_set_anchor(layer_surface, anchor);
+  // zwlr_layer_surface_v1_set_exclusive_zone(layer_surface, exclusive_zone);
+  // zwlr_layer_surface_v1_set_margin(layer_surface, margin_top, margin_right,
+  //                                  margin_bottom, margin_left);
+  // zwlr_layer_surface_v1_set_keyboard_interactivity(layer_surface,
+  //                                                  keyboard_interactive);
+  // zwlr_layer_surface_v1_add_listener(layer_surface, &layer_surface_listener,
+  //                                    layer_surface);
+  // wl_surface_commit(wl_surface);
+  // wl_display_roundtrip(display);
+
   this->presentation =
       wlr_presentation_create(server->display, server->backend);
 }

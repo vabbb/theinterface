@@ -23,6 +23,50 @@ void seat_request_cursor(struct wl_listener *listener, void *data) {
   }
 }
 
+void ti::seat::set_focus_layer(struct wlr_layer_surface_v1 *layer) {
+  if (!layer) {
+    if (this->focused_layer) {
+      this->focused_layer = NULL;
+      if (!wl_list_empty(&this->desktop->wem_views)) {
+        // Focus first view
+        ti::view *first_seat_view = wl_container_of(
+            this->desktop->wem_views.next, first_seat_view, link);
+        this->focus(first_seat_view);
+      } else {
+        this->focus(NULL);
+      }
+    }
+    return;
+  }
+  struct wlr_keyboard *keyboard = wlr_seat_get_keyboard(this->wlr_seat);
+  // if (!roots_seat_allow_input(seat, layer->resource)) {
+  //   return;
+  // }
+  // if (this->has_focus) {
+  ti::view *prev_focus = this->focused_view;
+  wlr_seat_keyboard_clear_focus(this->wlr_seat);
+  prev_focus->deactivate();
+  // }
+  // this->has_focus = false;
+  if (layer->current.layer >= ZWLR_LAYER_SHELL_V1_LAYER_TOP) {
+    this->focused_layer = reinterpret_cast<ti::layer_view *>(layer->data);
+  }
+  if (keyboard != NULL) {
+    wlr_seat_keyboard_notify_enter(this->wlr_seat, layer->surface,
+                                   keyboard->keycodes, keyboard->num_keycodes,
+                                   &keyboard->modifiers);
+  } else {
+    wlr_seat_keyboard_notify_enter(this->wlr_seat, layer->surface, NULL, 0,
+                                   NULL);
+  }
+
+  // if (this->cursor) {
+  //   roots_cursor_update_focus(this->cursor);
+  // }
+
+  // roots_input_method_relay_set_focus(&this->im_relay, layer->surface);
+}
+
 void ti::seat::focus(ti::view *v) {
   ti::view *prev_focus = this->focused_view;
   if (prev_focus == v) {

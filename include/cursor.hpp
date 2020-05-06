@@ -2,12 +2,15 @@
 #define TI_CURSOR_HPP
 
 namespace ti {
+class seat;
 enum cursor_mode {
   CURSOR_PASSTHROUGH,
   CURSOR_MOVE,
   CURSOR_RESIZE,
 };
 } // namespace ti
+
+void process_cursor_motion(ti::seat *seat, unsigned time);
 
 /** This event is raised by the backend when a new input device becomes
  * available. */

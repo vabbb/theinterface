@@ -34,6 +34,8 @@ struct output {
 
   struct wlr_output_damage *damage;
 
+  struct wlr_box usable_area;
+
   struct wl_list layers[4]; // layer_surface::link
 
   void get_decoration_box(ti::view &view, struct wlr_box &box);
